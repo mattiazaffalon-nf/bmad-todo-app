@@ -1,7 +1,7 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { db } from "./client";
-import { createTodo, getTodos } from "./queries";
+import { createTodo, getTodoById, getTodos } from "./queries";
 
 const uuid = () => crypto.randomUUID();
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -47,5 +47,45 @@ describe("db/queries", () => {
 
     const rows = await getTodos(null);
     expect(rows.map((r) => r.id)).toEqual([third, second, first]);
+  });
+
+  it("createTodo is idempotent on duplicate id", async () => {
+    const id = uuid();
+    const first = await createTodo({ id, description: "buy milk" }, null);
+    const second = await createTodo({ id, description: "buy milk" }, null);
+
+    expect(second.id).toBe(first.id);
+    expect(second.description).toBe(first.description);
+    expect(second.createdAt.getTime()).toBe(first.createdAt.getTime());
+
+    const rows = await getTodos(null);
+    expect(rows).toHaveLength(1);
+  });
+
+  it("createTodo idempotent path returns the original row even when retried with a different description", async () => {
+    const id = uuid();
+    const first = await createTodo({ id, description: "original" }, null);
+    const second = await createTodo({ id, description: "replacement" }, null);
+
+    expect(second.id).toBe(first.id);
+    expect(second.description).toBe("original");
+
+    const rows = await getTodos(null);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].description).toBe("original");
+  });
+
+  it("getTodoById returns the row when it exists", async () => {
+    const id = uuid();
+    await createTodo({ id, description: "buy milk" }, null);
+
+    const row = await getTodoById(id, null);
+    expect(row).not.toBeNull();
+    expect(row?.id).toBe(id);
+  });
+
+  it("getTodoById returns null when no row exists", async () => {
+    const row = await getTodoById(uuid(), null);
+    expect(row).toBeNull();
   });
 });
