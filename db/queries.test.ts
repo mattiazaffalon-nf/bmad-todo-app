@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { db } from "./client";

@@ -1,5 +1,4 @@
 import { z } from "zod";
-import type { Todo } from "@/db/schema";
 
 export const TodoCreateSchema = z.object({
   id: z.string().uuid(),
@@ -12,4 +11,11 @@ export const TodoUpdateSchema = z.object({
 });
 export type TodoUpdateInput = z.infer<typeof TodoUpdateSchema>;
 
-export type { Todo };
+export const TodoApiSchema = z.object({
+  id: z.string().uuid(),
+  description: z.string(),
+  completed: z.boolean(),
+  createdAt: z.string(),
+  userId: z.string().uuid().nullable(),
+});
+export type Todo = z.infer<typeof TodoApiSchema>;

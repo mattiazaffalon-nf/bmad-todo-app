@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TodoCreateSchema, TodoUpdateSchema } from "./validation";
+import { TodoApiSchema, TodoCreateSchema, TodoUpdateSchema } from "./validation";
 
 describe("TodoCreateSchema", () => {
   const validId = "11111111-1111-4111-8111-111111111111";
@@ -77,3 +77,43 @@ describe("TodoUpdateSchema", () => {
     expect(result.success).toBe(false);
   });
 });
+
+describe("TodoApiSchema", () => {
+  const validTodo = {
+    id: "11111111-1111-4111-8111-111111111111",
+    description: "buy milk",
+    completed: false,
+    createdAt: "2026-04-28T12:00:00.000Z",
+    userId: null,
+  };
+
+  it("accepts a valid response object", () => {
+    const result = TodoApiSchema.safeParse(validTodo);
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts nullable userId", () => {
+    const result = TodoApiSchema.safeParse({ ...validTodo, userId: null });
+    expect(result.success).toBe(true);
+  });
+
+  it("accepts a uuid userId", () => {
+    const result = TodoApiSchema.safeParse({
+      ...validTodo,
+      userId: "22222222-2222-4222-8222-222222222222",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a non-string createdAt (Date object)", () => {
+    const result = TodoApiSchema.safeParse({ ...validTodo, createdAt: new Date() });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects missing fields", () => {
+    const { description, completed, createdAt, userId } = validTodo;
+    const result = TodoApiSchema.safeParse({ description, completed, createdAt, userId });
+    expect(result.success).toBe(false);
+  });
+});
+
