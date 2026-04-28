@@ -1,0 +1,120 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Design tokens (v1, light theme).
+ * Authoritative source: ux-design-specification.md §"Color System", §"Spacing & Layout Foundation".
+ * Hardcoding hex/px values in component source is forbidden — always use Tailwind utilities
+ * that resolve to these CSS variables.
+ */
+:root {
+  /* Surfaces */
+  --bg: #fafafa;
+  --surface: #ffffff;
+
+  /* Foreground */
+  --foreground: #18181b;
+  --foreground-muted: #71717a;
+
+  /* Border */
+  --border-subtle: #e4e4e7;
+
+  /* Single accent — completion checkmark, focus ring, send button active state */
+  --accent: #4f46e5;
+  --accent-foreground: #ffffff;
+
+  /* Error/retry — muted amber, never bright red */
+  --error-foreground: #b45309;
+
+  /* Spacing scale (4px grid). Tailwind's default --spacing is also 4px; these
+   * named tokens exist for documentation and direct CSS use. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Radius (kept from shadcn defaults) */
+  --radius: 0.625rem;
+
+  /* shadcn-compat aliases — reroute shadcn's internal token names onto our v1 tokens.
+   * Keeps shadcn primitives (button, input, textarea, sonner) on-brand while only the
+   * tokens above are authoritative for application code. */
+  --background: var(--bg);
+  --primary: var(--accent);
+  --primary-foreground: var(--accent-foreground);
+  --muted: #f4f4f5;
+  --muted-foreground: var(--foreground-muted);
+  --secondary: #f4f4f5;
+  --secondary-foreground: var(--foreground);
+  --border: var(--border-subtle);
+  --input: var(--border-subtle);
+  --ring: var(--accent);
+  --card: var(--surface);
+  --card-foreground: var(--foreground);
+  --popover: var(--surface);
+  --popover-foreground: var(--foreground);
+  --destructive: var(--error-foreground);
+}
+
+/*
+ * Dark theme — token authoring deferred to a post-v1 story. The architecture supports
+ * a single-switch dark mode; this empty block reserves the extension point.
+ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* TODO: dark-theme tokens (deferred to post-v1) */
+  }
+}
+
+@theme inline {
+  /* v1 token utilities */
+  --color-background: var(--bg);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-border-subtle: var(--border-subtle);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-error-foreground: var(--error-foreground);
+
+  /* shadcn-compat utilities */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+
+  /* Inter font from app/layout.tsx (next/font) */
+  --font-sans: var(--font-inter);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
