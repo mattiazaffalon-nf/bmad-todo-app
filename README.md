@@ -23,10 +23,14 @@ pnpm dev
 ## Scripts
 
 - `pnpm dev` — Next.js dev server (Turbopack).
-- `pnpm build` — production build.
+- `pnpm build` — production build (`drizzle-kit migrate && next build`; runs DB migrations before building).
 - `pnpm start` — serve the production build locally.
 - `pnpm lint` — ESLint (Next.js config + import-graph rules + jsx-a11y).
 - `pnpm typecheck` — `tsc --noEmit`.
+- `pnpm test` — Vitest run (unit + integration; integration tests require `DATABASE_URL` in `.env.local`).
+- `pnpm test:watch` — Vitest watch mode.
+- `pnpm db:generate` — generate a migration SQL file from the latest `db/schema.ts`.
+- `pnpm db:migrate` — apply pending migrations against `DATABASE_URL_UNPOOLED` (or `DATABASE_URL`).
 
 ## Required environment variables
 

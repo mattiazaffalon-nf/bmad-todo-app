@@ -58,6 +58,23 @@ All color and spacing values live as CSS variables in `app/globals.css`. **Never
 
 The shadcn primitives in `components/ui/*` reference shadcn's internal token names (`--primary`, `--ring`, `--muted-foreground`, etc.); those names are aliased onto our v1 tokens in `globals.css`, so visual changes happen by editing the v1 tokens — not the alias mappings.
 
+## Database
+
+- **Schema source of truth:** `db/schema.ts`. Every column type, constraint, and default lives there. Migrations are **generated** with `pnpm db:generate`, never hand-written. Drift between `schema.ts` and the produced SQL is a bug — regenerate, don't patch.
+- **Driver:** `pg` (node-postgres) via `drizzle-orm/node-postgres`. **Never** `drizzle-orm/neon-http` — the architecture chose the Node driver for richer query support and easier local Postgres development.
+- **`db/client.ts` is `server-only`.** First line is `import "server-only";`. Never import `db/client` (or anything that re-exports it) from `components/`, `hooks/`, or `lib/api-client.ts`.
+- **All queries are parameterized Drizzle expressions.** Raw SQL strings in application code are forbidden. The only acceptable `sql\`...\`` template is for DDL in tests (e.g., `TRUNCATE TABLE todos`) where Drizzle's expression API has no helper.
+- **`userId` parameter is mandatory** on every query helper, even though v1 always passes `null`. Forward-compat for auth — do not "simplify" by removing it.
+- **Migrations run before `next build`.** The unified `pnpm build` script is `drizzle-kit migrate && next build`. A migration failure aborts the deploy before serving traffic. On Vercel, `DATABASE_URL` (and `DATABASE_URL_UNPOOLED`, used by `drizzle.config.ts` for migrations when present) come from the Vercel-Neon Marketplace integration. Locally, pull them via `pnpm dlx vercel env pull .env.local`.
+- **Test-DB strategy:** integration tests in `*.test.ts(x)` run against the same `DATABASE_URL` set in `.env.local` — typically a personal Neon dev branch. `beforeEach` truncates the affected tables. No mocking layer for DB tests; the real schema is the contract.
+
+## Migrations
+
+- `pnpm db:generate` — produce a migration after editing `db/schema.ts`. Drizzle-kit names files `0000_<adjective>_<noun>.sql`; the `0000_` ordering prefix is what matters, the suffix is auto-generated.
+- `pnpm db:migrate` — apply all pending migrations against `DATABASE_URL_UNPOOLED` (or `DATABASE_URL` if unpooled is unset). Idempotent.
+- Both commands read `DATABASE_URL_UNPOOLED` first, falling back to `DATABASE_URL`. For Neon, the pooled endpoint can be unfriendly to migration DDL in transaction mode; the unpooled (direct) endpoint is the safer default.
+- Generated SQL files in `db/migrations/` are committed and **never hand-edited**. To change a migration, edit `db/schema.ts` and regenerate.
+
 ## Tooling
 
 - **Package manager:** `pnpm`. Never `npm` or `yarn`.
