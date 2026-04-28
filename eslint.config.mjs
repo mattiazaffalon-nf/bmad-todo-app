@@ -98,6 +98,35 @@ const eslintConfig = defineConfig([
     },
   },
 
+  // Architectural import-graph: db/** is the data boundary — must not reach into components/**, hooks/**, or app/api/**.
+  // Direction is one-way: app/api/ -> db/queries -> db/client. Never reversed.
+  {
+    files: ["db/**/*.{ts,tsx}"],
+    ignores: ["db/**/*.test.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/components/*", "**/components/*"],
+              message: "db/ must not import from components/ — data layer stays UI-agnostic.",
+            },
+            {
+              group: ["@/hooks/*", "**/hooks/*"],
+              message: "db/ must not import from hooks/ — hooks are client-only.",
+            },
+            {
+              group: ["@/app/api/*", "**/app/api/*"],
+              message: "db/ must not import from app/api/ — handlers depend on db, not the reverse.",
+            },
+          ],
+          paths: noModalsPaths,
+        },
+      ],
+    },
+  },
+
   globalIgnores([
     ".next/**",
     "out/**",
