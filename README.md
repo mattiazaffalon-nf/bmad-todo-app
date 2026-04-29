@@ -4,21 +4,68 @@ A focused, fast todo app built with Next.js 16, shadcn/ui, and Postgres. Created
 
 ## Local development
 
+### Prerequisites
+
+| Tool | Version | Notes |
+| --- | --- | --- |
+| Node.js | **22 LTS** | Pinned in `.nvmrc`. Use `nvm use` (or `fnm use`, `volta`, etc.). Vercel builds on 22 — reproduce CI failures locally on 22. |
+| pnpm | **9.x** | Required. `npm` and `yarn` are not supported. Install once with `corepack enable && corepack prepare pnpm@9.0.0 --activate`. |
+| Postgres 17 | optional (path B/C) | Either via the compose stack below, a local install, or a Neon branch. |
+| Docker or Podman | optional (path A/B) | Only needed for the compose stack. `docker compose` and `podman compose` are interchangeable. |
+| Vercel CLI | optional (path C) | Only needed to pull a Neon dev-branch `DATABASE_URL`. Install with `npm i -g vercel`. |
+
+### Pick a setup path
+
+| Path | When to use | DB | App runs on |
+| --- | --- | --- | --- |
+| **A. Full compose** | Fastest start; no Node install needed; matches the production-style runtime | Postgres in container | Container (built from `Dockerfile`) |
+| **B. Hybrid** *(recommended for day-to-day dev)* | Get HMR + instant feedback while keeping the DB ephemeral and isolated | Postgres in container | `pnpm dev` on the host |
+| **C. Vercel-linked Neon branch** | Working on something that touches Vercel preview / Neon-specific behavior | Neon branch (per-PR) | `pnpm dev` on the host |
+
+### Path A — full compose (zero-config)
+
 ```bash
-# 1. Use the pinned Node version (22 LTS)
-nvm use   # reads .nvmrc
-
-# 2. Install dependencies
-pnpm install
-
-# 3. Configure environment (Story 1.2 onward needs DATABASE_URL)
-cp .env.example .env.local
-# fill in DATABASE_URL when the database is provisioned in Story 1.2
-
-# 4. Start the dev server
-pnpm dev
-# Local: http://localhost:3000
+docker compose up --build       # or: podman compose up --build
+# → http://localhost:3000
 ```
+
+`compose.yml` builds the app from `Dockerfile` and points it at a Postgres 17 sidecar. The container's startup command runs `pnpm db:migrate` before serving (`Dockerfile:56`). Data persists in the `pgdata` named volume — `docker compose down -v` to wipe.
+
+### Path B — hybrid (compose DB + local dev server)
+
+```bash
+# 1. Start only the database
+docker compose up -d db
+
+# 2. Pin Node + install
+nvm use && pnpm install
+
+# 3. Point the app at the compose DB
+echo 'DATABASE_URL=postgresql://todo:todo@localhost:5432/todo' > .env.local
+echo 'DATABASE_URL_UNPOOLED=postgresql://todo:todo@localhost:5432/todo' >> .env.local
+
+# 4. Run migrations once, then start dev
+pnpm db:migrate
+pnpm dev
+# → http://localhost:3000
+```
+
+> **Port 5432 already in use?** Another Postgres is bound on the host. Either stop it, or override the published port: `docker compose run --service-ports -p 5433:5432 db` and use `localhost:5433` in `.env.local`.
+
+### Path C — Vercel-linked Neon dev branch
+
+```bash
+# 1. Link the local checkout to the Vercel project (one-time)
+vercel link
+
+# 2. Pull DATABASE_URL (and DATABASE_URL_UNPOOLED) into .env.local
+pnpm dlx vercel env pull .env.local
+
+# 3. Pin Node + install + run migrations + start dev
+nvm use && pnpm install && pnpm db:migrate && pnpm dev
+```
+
+`vercel env pull` populates the Neon-managed connection strings via the Vercel-Neon Marketplace integration. Use this when you specifically need the Neon dev branch (e.g., debugging a preview-deploy issue).
 
 ## Scripts
 
@@ -29,18 +76,54 @@ pnpm dev
 - `pnpm typecheck` — `tsc --noEmit`.
 - `pnpm test` — Vitest run (unit + integration; integration tests require `DATABASE_URL` in `.env.local`).
 - `pnpm test:watch` — Vitest watch mode.
+- `pnpm test:e2e` — Playwright E2E suite (auto-starts `pnpm dev` if `BASE_URL` is unset; otherwise points at `BASE_URL`).
 - `pnpm db:generate` — generate a migration SQL file from the latest `db/schema.ts`.
 - `pnpm db:migrate` — apply pending migrations against `DATABASE_URL_UNPOOLED` (or `DATABASE_URL`).
+
+## Running the tests
+
+Unit + integration:
+
+```bash
+pnpm test                       # one-shot
+pnpm test:watch                 # watch mode
+pnpm exec vitest run --coverage # with coverage report
+```
+
+Integration tests run against the real Postgres reachable via `DATABASE_URL`. `beforeEach` truncates the affected tables — never point this at production.
+
+End-to-end (Playwright):
+
+```bash
+pnpm exec playwright install     # one-time browser install
+pnpm test:e2e                    # auto-starts pnpm dev if BASE_URL is unset
+BASE_URL=http://localhost:3000 pnpm test:e2e   # use an already-running server
+```
+
+The standalone accessibility scan (`scripts/axe-scan.mjs`) is documented in [`docs/qa-report-2026-04-29.md`](./docs/qa-report-2026-04-29.md).
 
 ## Required environment variables
 
 See `.env.example`. Values are configured per-environment in Vercel:
 
-| Variable | Used by | Story |
+| Variable | Used by | Required for | Story |
+| --- | --- | --- | --- |
+| `DATABASE_URL` | Drizzle / Postgres | dev, build, tests | 1.2 |
+| `DATABASE_URL_UNPOOLED` | Drizzle migrations | `pnpm db:migrate` (preferred) | 1.2 |
+| `SENTRY_DSN` | Server-side error reporting | production | 4.3 |
+| `NEXT_PUBLIC_SENTRY_DSN` | Browser error reporting | production | 4.3 |
+| `NEXT_PUBLIC_SENTRY_ENABLED` | Force-enable Sentry in dev | optional | 4.3 |
+
+## Troubleshooting
+
+| Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| `DATABASE_URL` | Drizzle / Postgres | 1.2 |
-| `SENTRY_DSN` | Server-side error reporting | 4.3 |
-| `NEXT_PUBLIC_SENTRY_DSN` | Browser error reporting | 4.3 |
+| `Error: DATABASE_URL is required` at startup | `.env.local` missing or empty | Pick a path above (A/B/C) and populate `.env.local`. |
+| `next build` fails with a connection error | `pnpm build` runs `drizzle-kit migrate` first; needs a reachable DB | Start the DB (path B/C) before running `pnpm build`. The Dockerfile build skips this step (`Dockerfile:25`). |
+| Vitest integration tests hang or timeout | `DATABASE_URL` points at an unreachable host | Verify `psql "$DATABASE_URL" -c '\\l'` works. |
+| `pnpm install` fails on `corepack` | Older Node version | `nvm use` to switch to 22 LTS. |
+| ESLint flags `no-restricted-imports` | The import-graph rule in `AGENTS.md` was violated | Restructure the imports — do not silence the rule. |
+| Playwright tests can't find browsers | Browsers not installed | `pnpm exec playwright install`. |
 
 ## Deployment
 
