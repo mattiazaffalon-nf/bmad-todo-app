@@ -92,6 +92,60 @@ describe("useToggleTodo", () => {
     expect(data?.[0]?.completed).toBe(true); // intended value preserved
   });
 
+  it("onError sets failedMutation: 'toggle' alongside syncStatus: 'failed'", async () => {
+    const existing: OptimisticTodo = { ...SERVER_TODO, completed: false, syncStatus: "idle" };
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData<OptimisticTodo[]>(["todos"], [existing]);
+
+    let rejectMutation!: (err: Error) => void;
+    vi.mocked(apiClient.toggleTodo).mockImplementation(
+      () => new Promise((_resolve, reject) => { rejectMutation = reject; }),
+    );
+
+    const { result } = renderHook(() => useToggleTodo(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    act(() => {
+      result.current.mutate({ id: TEST_ID, completed: true });
+    });
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData<OptimisticTodo[]>(["todos"])?.[0]?.syncStatus).toBe("pending");
+    });
+
+    act(() => {
+      rejectMutation(new Error("fail"));
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    const data = queryClient.getQueryData<OptimisticTodo[]>(["todos"]);
+    expect(data?.[0]?.syncStatus).toBe("failed");
+    expect(data?.[0]?.failedMutation).toBe("toggle");
+  });
+
+  it("retry (second mutate with same args) succeeds and clears syncStatus to idle", async () => {
+    const existing: OptimisticTodo = { ...SERVER_TODO, completed: false, syncStatus: "failed", failedMutation: "toggle" };
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData<OptimisticTodo[]>(["todos"], [existing]);
+
+    vi.mocked(apiClient.toggleTodo).mockResolvedValue(SERVER_TODO);
+
+    const { result } = renderHook(() => useToggleTodo(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    act(() => {
+      result.current.mutate({ id: TEST_ID, completed: true });
+    });
+
+    await waitFor(() => result.current.isSuccess);
+
+    const data = queryClient.getQueryData<OptimisticTodo[]>(["todos"]);
+    expect(data?.[0]?.syncStatus).toBe("idle");
+  });
+
   it("onSuccess replaces cache entry with server response and syncStatus idle", async () => {
     const existing: OptimisticTodo = { ...SERVER_TODO, completed: false, syncStatus: "idle" };
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });

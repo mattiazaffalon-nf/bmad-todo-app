@@ -136,6 +136,45 @@ describe("useDeleteTodo", () => {
     expect(data).toHaveLength(1);
     expect(data?.[0]?.id).toBe(TEST_ID);
     expect(data?.[0]?.syncStatus).toBe("failed");
+    expect(data?.[0]?.failedMutation).toBe("delete");
+  });
+
+  it("retryDelete sets syncStatus pending then removes entry on success", async () => {
+    const failedTodo: OptimisticTodo = { ...EXISTING_TODO, syncStatus: "failed", failedMutation: "delete" };
+    const queryClient = makeQueryClient();
+    queryClient.setQueryData<OptimisticTodo[]>(["todos"], [failedTodo]);
+    vi.mocked(apiClient.deleteTodo).mockResolvedValue();
+
+    const { result } = renderHook(() => useDeleteTodo(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.retryDelete(TEST_ID);
+    });
+
+    expect(apiClient.deleteTodo).toHaveBeenCalledWith(TEST_ID);
+    const data = queryClient.getQueryData<OptimisticTodo[]>(["todos"]);
+    expect(data).toEqual([]);
+  });
+
+  it("retryDelete sets syncStatus failed with failedMutation delete on repeated failure", async () => {
+    const failedTodo: OptimisticTodo = { ...EXISTING_TODO, syncStatus: "failed", failedMutation: "delete" };
+    const queryClient = makeQueryClient();
+    queryClient.setQueryData<OptimisticTodo[]>(["todos"], [failedTodo]);
+    vi.mocked(apiClient.deleteTodo).mockRejectedValue(new Error("still failing"));
+
+    const { result } = renderHook(() => useDeleteTodo(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    await act(async () => {
+      await result.current.retryDelete(TEST_ID);
+    });
+
+    const data = queryClient.getQueryData<OptimisticTodo[]>(["todos"]);
+    expect(data?.[0]?.syncStatus).toBe("failed");
+    expect(data?.[0]?.failedMutation).toBe("delete");
   });
 
   it("second mutate while first timer is pending does not cancel the first timer", async () => {

@@ -24,7 +24,7 @@ export function useCreateTodo() {
     },
     onError: (_err, input) => {
       queryClient.setQueryData<OptimisticTodo[]>(["todos"], (old = []) =>
-        old.map((t) => (t.id === input.id ? { ...t, syncStatus: "failed" as const } : t)),
+        old.map((t) => (t.id === input.id ? { ...t, syncStatus: "failed" as const, failedMutation: "create" as const } : t)),
       );
     },
     onSuccess: (serverTodo, input) => {

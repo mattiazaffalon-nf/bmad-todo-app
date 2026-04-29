@@ -1,6 +1,6 @@
 # Story 4.2: Wire user-initiated retry across all three mutations + Journey 5 E2E
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -68,25 +68,25 @@ So that transient failures recover smoothly and my typed content never gets lost
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Extend `OptimisticTodo` with `failedMutation` (AC #5)**
-  - [ ] In `lib/validation.ts`, update `OptimisticTodo`:
+- [x] **Task 1: Extend `OptimisticTodo` with `failedMutation` (AC #5)**
+  - [x] In `lib/validation.ts`, update `OptimisticTodo`:
     ```ts
     export type FailedMutation = "create" | "toggle" | "delete";
     export type OptimisticTodo = Todo & { syncStatus?: SyncStatus; failedMutation?: FailedMutation };
     ```
-  - [ ] `pnpm typecheck` passes
+  - [x] `pnpm typecheck` passes
 
-- [ ] **Task 2: Set `failedMutation` in hook error paths (AC #5)**
-  - [ ] `hooks/use-create-todo.ts` `onError`: add `failedMutation: "create" as const` alongside `syncStatus: "failed"`:
+- [x] **Task 2: Set `failedMutation` in hook error paths (AC #5)**
+  - [x] `hooks/use-create-todo.ts` `onError`: add `failedMutation: "create" as const` alongside `syncStatus: "failed"`:
     ```ts
     old.map((t) => (t.id === input.id ? { ...t, syncStatus: "failed" as const, failedMutation: "create" as const } : t))
     ```
-  - [ ] `hooks/use-toggle-todo.ts` `onError`: add `failedMutation: "toggle" as const`
-  - [ ] `hooks/use-delete-todo.ts` catch block: add `failedMutation: "delete" as const` to the restored entry
-  - [ ] `pnpm typecheck` passes
+  - [x] `hooks/use-toggle-todo.ts` `onError`: add `failedMutation: "toggle" as const`
+  - [x] `hooks/use-delete-todo.ts` catch block: add `failedMutation: "delete" as const` to the restored entry
+  - [x] `pnpm typecheck` passes
 
-- [ ] **Task 3: Add `retryDelete` to `useDeleteTodo` (AC #3)**
-  - [ ] In `hooks/use-delete-todo.ts`, add a `retryDelete` method returned from the hook:
+- [x] **Task 3: Add `retryDelete` to `useDeleteTodo` (AC #3)**
+  - [x] In `hooks/use-delete-todo.ts`, add a `retryDelete` method returned from the hook:
     ```ts
     const retryDelete = useCallback(async (id: string) => {
       // Show spinner immediately
@@ -111,13 +111,13 @@ So that transient failures recover smoothly and my typed content never gets lost
       }
     }, [queryClient]);
     ```
-  - [ ] Return `{ mutate, undo, retryDelete }` from the hook
-  - [ ] `pnpm typecheck` passes
+  - [x] Return `{ mutate, undo, retryDelete }` from the hook
+  - [x] `pnpm typecheck` passes
 
-- [ ] **Task 4: Wire retry routing in `TodoListClient` (AC #1–3)**
-  - [ ] Import `useCreateTodo`, `useToggleTodo`, `useQueryClient` in `TodoListClient.tsx`
-  - [ ] Instantiate `createTodo = useCreateTodo()` and `toggleTodo = useToggleTodo()` (for retry only; the primary create lives in `TaskInput` and primary toggle in `TaskItem`)
-  - [ ] Implement `handleRetry`:
+- [x] **Task 4: Wire retry routing in `TodoListClient` (AC #1–3)**
+  - [x] Import `useCreateTodo`, `useToggleTodo`, `useQueryClient` in `TodoListClient.tsx`
+  - [x] Instantiate `createTodo = useCreateTodo()` and `toggleTodo = useToggleTodo()` (for retry only; the primary create lives in `TaskInput` and primary toggle in `TaskItem`)
+  - [x] Implement `handleRetry`:
     ```ts
     const handleRetry = useCallback((id: string) => {
       const todos = queryClient.getQueryData<OptimisticTodo[]>(["todos"]) ?? [];
@@ -136,12 +136,12 @@ So that transient failures recover smoothly and my typed content never gets lost
       }
     }, [createTodo, deleteTodo, queryClient, toggleTodo]);
     ```
-  - [ ] Pass `onRetry={handleRetry}` to `<TaskList>`
-  - [ ] `pnpm typecheck` passes
+  - [x] Pass `onRetry={handleRetry}` to `<TaskList>`
+  - [x] `pnpm typecheck` passes
 
-- [ ] **Task 5: Thread `onRetry` through `TaskList` and `TaskItem` with local `retrying` state (AC #1–3)**
-  - [ ] `components/TaskList.tsx`: add `onRetry?: (id: string) => void` to props and thread to each `<TaskItem>`
-  - [ ] `components/TaskItem.tsx`:
+- [x] **Task 5: Thread `onRetry` through `TaskList` and `TaskItem` with local `retrying` state (AC #1–3)**
+  - [x] `components/TaskList.tsx`: add `onRetry?: (id: string) => void` to props and thread to each `<TaskItem>`
+  - [x] `components/TaskItem.tsx`:
     - Add `onRetry?: (id: string) => void` to `TaskItemProps`
     - Add local `retrying` state:
       ```ts
@@ -168,18 +168,18 @@ So that transient failures recover smoothly and my typed content never gets lost
         />
       )}
       ```
-  - [ ] `pnpm typecheck` and `pnpm lint` pass
+  - [x] `pnpm typecheck` and `pnpm lint` pass
 
-- [ ] **Task 6: Update and add Vitest tests (AC #6)**
-  - [ ] `hooks/use-create-todo.test.ts`: add test for `failedMutation: 'create'` set on error; add retry test (second `mutate` call with same args succeeds → `syncStatus: 'idle'`)
-  - [ ] `hooks/use-toggle-todo.test.ts`: add test for `failedMutation: 'toggle'`; add retry test
-  - [ ] `hooks/use-delete-todo.test.ts`: add test for `retryDelete` — sets `syncStatus: 'pending'`, removes on success; sets `syncStatus: 'failed'` on repeated failure
-  - [ ] `components/TaskItem.test.tsx`: add test — `syncStatus: 'failed'` renders `ErrorIndicator`; clicking it calls `onRetry` with `todo.id`
-  - [ ] `pnpm test` passes
+- [x] **Task 6: Update and add Vitest tests (AC #6)**
+  - [x] `hooks/use-create-todo.test.ts`: add test for `failedMutation: 'create'` set on error; add retry test (second `mutate` call with same args succeeds → `syncStatus: 'idle'`)
+  - [x] `hooks/use-toggle-todo.test.ts`: add test for `failedMutation: 'toggle'`; add retry test
+  - [x] `hooks/use-delete-todo.test.ts`: add test for `retryDelete` — sets `syncStatus: 'pending'`, removes on success; sets `syncStatus: 'failed'` on repeated failure
+  - [x] `components/TaskItem.test.tsx`: add test — `syncStatus: 'failed'` renders `ErrorIndicator`; clicking it calls `onRetry` with `todo.id`
+  - [x] `pnpm test` passes
 
-- [ ] **Task 7: Write E2E `e2e/error-recovery.spec.ts` (AC #7)**
-  - [ ] `test.beforeEach`: `cleanupTodos()`
-  - [ ] Journey 5 — create failure + retry:
+- [x] **Task 7: Write E2E `e2e/error-recovery.spec.ts` (AC #7)**
+  - [x] `test.beforeEach`: `cleanupTodos()`
+  - [x] Journey 5 — create failure + retry:
     - Seed no tasks; `page.goto("/")`
     - `await page.route("**/api/todos", route => route.abort(), { times: 1 })` to abort the next POST
     - Type task + press Enter in `TaskInput`
@@ -188,18 +188,18 @@ So that transient failures recover smoothly and my typed content never gets lost
     - Click the ErrorIndicator button
     - Assert `getByText("Couldn't save")` not visible (indicator gone after success)
     - `page.reload()` → assert task is visible
-  - [ ] Bonus: during failure, type another task → assert it persists independently (no ErrorIndicator for the second task)
-  - [ ] `pnpm test` (unit only) still green
+  - [x] Bonus: during failure, type another task → assert it persists independently (no ErrorIndicator for the second task)
+  - [x] `pnpm test` (unit only) still green
 
-- [ ] **Task 8: Extend `e2e/a11y.spec.ts` with failed-task scan (AC #7)**
-  - [ ] Add test: `page.route` to abort POST → submit task → `ErrorIndicator` visible → axe-core scan → zero violations
-  - [ ] Use `page.unroute` to clean up after the test
+- [x] **Task 8: Extend `e2e/a11y.spec.ts` with failed-task scan (AC #7)**
+  - [x] Add test: `page.route` to abort POST → submit task → `ErrorIndicator` visible → axe-core scan → zero violations
+  - [x] Use `page.unroute` to clean up after the test
 
-- [ ] **Task 9: Verify all quality gates (AC #8)**
-  - [ ] `pnpm lint` — clean
-  - [ ] `pnpm typecheck` — clean
-  - [ ] `pnpm test` — all green
-  - [ ] `pnpm build` — clean
+- [x] **Task 9: Verify all quality gates (AC #8)**
+  - [x] `pnpm lint` — clean
+  - [x] `pnpm typecheck` — clean
+  - [x] `pnpm test` — all green
+  - [x] `pnpm build` — clean
 
 ## Dev Notes
 

@@ -81,3 +81,30 @@ test("a11y: post-deletion focus state has zero axe violations", async ({ page })
 
   expect(results.violations).toEqual([]);
 });
+
+test("a11y: failed-sync task with ErrorIndicator has zero axe violations", async ({ page }) => {
+  // Abort the next POST to put a task in syncStatus: failed
+  await page.route("**/api/todos", (route) => {
+    if (route.request().method() === "POST") {
+      void route.abort();
+    } else {
+      void route.continue();
+    }
+  }, { times: 1 });
+
+  await page.goto("/");
+
+  const input = page.getByRole("textbox", { name: /new task/i });
+  await input.fill("axe error indicator target");
+  await input.press("Enter");
+
+  await expect(page.getByRole("button", { name: /couldn't save/i })).toBeVisible();
+
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+
+  await page.unroute("**/api/todos");
+
+  expect(results.violations).toEqual([]);
+});

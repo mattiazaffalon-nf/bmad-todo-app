@@ -91,6 +91,79 @@ describe("useCreateTodo", () => {
     expect(failedEntry?.description).toBe("test");
   });
 
+  it("onError sets failedMutation: 'create' alongside syncStatus: 'failed'", async () => {
+    const existing: OptimisticTodo = { ...SERVER_TODO, id: "existing", description: "existing" };
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData<OptimisticTodo[]>(["todos"], [existing]);
+
+    let rejectMutation!: (err: Error) => void;
+    vi.mocked(apiClient.createTodo).mockImplementation(
+      () => new Promise((_resolve, reject) => { rejectMutation = reject; }),
+    );
+
+    const { result } = renderHook(() => useCreateTodo(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    act(() => {
+      result.current.mutate({ id: TEST_ID, description: "test" });
+    });
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData<OptimisticTodo[]>(["todos"])?.[0]?.syncStatus).toBe("pending");
+    });
+
+    act(() => {
+      rejectMutation(new Error("fail"));
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    const data = queryClient.getQueryData<OptimisticTodo[]>(["todos"]);
+    const failedEntry = data?.find((t) => t.id === TEST_ID);
+    expect(failedEntry?.syncStatus).toBe("failed");
+    expect(failedEntry?.failedMutation).toBe("create");
+  });
+
+  it("retry (second mutate with same args) succeeds and clears syncStatus to idle", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    queryClient.setQueryData<OptimisticTodo[]>(["todos"], []);
+
+    let rejectMutation!: (err: Error) => void;
+    vi.mocked(apiClient.createTodo)
+      .mockImplementationOnce(
+        () => new Promise((_resolve, reject) => { rejectMutation = reject; }),
+      )
+      .mockResolvedValueOnce(SERVER_TODO);
+
+    const { result } = renderHook(() => useCreateTodo(), {
+      wrapper: createWrapper(queryClient),
+    });
+
+    act(() => {
+      result.current.mutate({ id: TEST_ID, description: "test" });
+    });
+
+    await waitFor(() => {
+      expect(queryClient.getQueryData<OptimisticTodo[]>(["todos"])?.[0]?.syncStatus).toBe("pending");
+    });
+
+    act(() => {
+      rejectMutation(new Error("fail"));
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+
+    act(() => {
+      result.current.mutate({ id: TEST_ID, description: "test" });
+    });
+
+    await waitFor(() => result.current.isSuccess);
+
+    const data = queryClient.getQueryData<OptimisticTodo[]>(["todos"]);
+    expect(data?.[0]?.syncStatus).toBe("idle");
+  });
+
   it("onSuccess replaces optimistic entry with server response and syncStatus idle", async () => {
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     queryClient.setQueryData<OptimisticTodo[]>(["todos"], []);

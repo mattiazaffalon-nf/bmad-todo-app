@@ -13,16 +13,27 @@ const SWIPE_PX_THRESHOLD = 80;
 interface TaskItemProps {
   todo: OptimisticTodo;
   onDelete?: (id: string) => void;
+  onRetry?: (id: string) => void;
 }
 
-export function TaskItem({ todo, onDelete }: TaskItemProps) {
+export function TaskItem({ todo, onDelete, onRetry }: TaskItemProps) {
   const toggleTodo = useToggleTodo();
   const enableSwipe = useMediaQuery("(max-width: 1023.98px) and (pointer: coarse)");
   const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const rowRef = useRef<HTMLLIElement | null>(null);
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevSyncStatusRef = useRef(todo.syncStatus);
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+
+  useEffect(() => {
+    const prev = prevSyncStatusRef.current;
+    prevSyncStatusRef.current = todo.syncStatus;
+    if (prev === "pending" && todo.syncStatus !== "pending") {
+      setRetrying(false);
+    }
+  }, [todo.syncStatus]);
 
   useEffect(() => {
     return () => {
@@ -155,7 +166,10 @@ export function TaskItem({ todo, onDelete }: TaskItemProps) {
           {todo.description}
         </p>
         {todo.syncStatus === "failed" && (
-          <ErrorIndicator onRetry={() => {}} retrying={false} />
+          <ErrorIndicator
+            onRetry={() => { setRetrying(true); onRetry?.(todo.id); }}
+            retrying={retrying}
+          />
         )}
         <button
           type="button"

@@ -195,6 +195,28 @@ describe("TaskItem", () => {
     expect(() => fireEvent.keyDown(row, { key: "Delete" })).not.toThrow();
   });
 
+  // --- ErrorIndicator (AC #5, Task 5) ---
+
+  it("renders ErrorIndicator when syncStatus is failed", () => {
+    const failedTodo: OptimisticTodo = { ...todo, syncStatus: "failed" };
+    render(<ul><TaskItem todo={failedTodo} /></ul>);
+    expect(screen.getByRole("button", { name: /couldn't save/i })).toBeInTheDocument();
+  });
+
+  it("clicking ErrorIndicator calls onRetry with todo.id", () => {
+    const mockRetry = vi.fn();
+    const failedTodo: OptimisticTodo = { ...todo, syncStatus: "failed" };
+    render(<ul><TaskItem todo={failedTodo} onRetry={mockRetry} /></ul>);
+    fireEvent.click(screen.getByRole("button", { name: /couldn't save/i }));
+    expect(mockRetry).toHaveBeenCalledWith(todo.id);
+  });
+
+  it("does not render ErrorIndicator when syncStatus is idle", () => {
+    const idleTodo: OptimisticTodo = { ...todo, syncStatus: "idle" };
+    render(<ul><TaskItem todo={idleTodo} /></ul>);
+    expect(screen.queryByRole("button", { name: /couldn't save/i })).not.toBeInTheDocument();
+  });
+
   // --- Swipe-left delete (AC #2) ---
 
   it("swipe-left past threshold at base viewport calls onDelete after 300ms", () => {
