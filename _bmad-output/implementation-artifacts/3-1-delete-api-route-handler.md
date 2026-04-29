@@ -1,6 +1,6 @@
 # Story 3.1: Build idempotent `DELETE /api/todos/[id]` Route Handler
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -39,28 +39,28 @@ So that delete retries are safe even when the network is flaky and the server ha
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Add `deleteTodo` to `db/queries.ts` (AC: #1)**
-  - [ ] Use `userIdFilter` (already defined at top of file) for the WHERE clause
-  - [ ] Use Drizzle's `.delete(todos).where(...).returning()` — return `result.length`
-  - [ ] Confirm `pnpm typecheck` still passes
+- [x] **Task 1: Add `deleteTodo` to `db/queries.ts` (AC: #1)**
+  - [x] Use `userIdFilter` (already defined at top of file) for the WHERE clause
+  - [x] Use Drizzle's `.delete(todos).where(...).returning()` — return `result.length`
+  - [x] Confirm `pnpm typecheck` still passes
 
-- [ ] **Task 2: Add `DELETE` handler to `app/api/todos/[id]/route.ts` (AC: #2, #3)**
-  - [ ] Import `deleteTodo` from `@/db/queries`
-  - [ ] Reuse existing `IdSchema` and `internalError` / `validationFailed` — do NOT redefine them
-  - [ ] Return `new Response(null, { status: 204 })` — not `Response.json(...)` (no body on 204)
-  - [ ] Confirm `pnpm typecheck` passes
+- [x] **Task 2: Add `DELETE` handler to `app/api/todos/[id]/route.ts` (AC: #2, #3)**
+  - [x] Import `deleteTodo` from `@/db/queries`
+  - [x] Reuse existing `IdSchema` and `internalError` / `validationFailed` — do NOT redefine them
+  - [x] Return `new Response(null, { status: 204 })` — not `Response.json(...)` (no body on 204)
+  - [x] Confirm `pnpm typecheck` passes
 
-- [ ] **Task 3: Extend `app/api/todos/[id]/route.test.ts` (AC: #4)**
-  - [ ] Add `DELETE` helper mirroring the existing `patch` helper
-  - [ ] Import the new `DELETE` export alongside `PATCH`
-  - [ ] Add 4 test cases in a new `describe("DELETE /api/todos/[id]", ...)` block
-  - [ ] Confirm all existing PATCH tests still pass
+- [x] **Task 3: Extend `app/api/todos/[id]/route.test.ts` (AC: #4)**
+  - [x] Add `DELETE` helper mirroring the existing `patch` helper
+  - [x] Import the new `DELETE` export alongside `PATCH`
+  - [x] Add 4 test cases in a new `describe("DELETE /api/todos/[id]", ...)` block
+  - [x] Confirm all existing PATCH tests still pass
 
-- [ ] **Task 4: Verify all gates (AC: #5)**
-  - [ ] `pnpm lint` — clean
-  - [ ] `pnpm typecheck` — clean
-  - [ ] `pnpm test` — all tests green (95 existing + ~4 new)
-  - [ ] `pnpm build` — clean
+- [x] **Task 4: Verify all gates (AC: #5)**
+  - [x] `pnpm lint` — clean
+  - [x] `pnpm typecheck` — clean
+  - [x] `pnpm test` — all tests green (99/99: 95 existing + 4 new DELETE)
+  - [x] `pnpm build` — clean
 
 ## Dev Notes
 
@@ -213,6 +213,20 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- `pnpm typecheck` — clean after each task.
+- `pnpm lint` — clean.
+- `pnpm test` — 99/99 green (95 prior + 4 new DELETE tests).
+- `pnpm build` — clean; migrations applied, Next.js compiled successfully.
+
 ### Completion Notes List
 
+- `db/queries.ts`: added `deleteTodo(id, userId)` using existing `userIdFilter` + Drizzle `.delete().where().returning()`. Returns `result.length` (0 or 1); never throws on missing row.
+- `app/api/todos/[id]/route.ts`: added `DELETE` handler reusing existing `IdSchema`, `validationFailed`, `internalError`. Returns `new Response(null, { status: 204 })` — no body. Row count ignored for idempotency.
+- `app/api/todos/[id]/route.test.ts`: added `del` helper + 4-test `describe("DELETE /api/todos/[id]")` block covering: 204 on delete, 204 on re-delete (idempotency), 400 on bad UUID, 500 on DB throw.
+
 ### File List
+
+- `db/queries.ts` — added `deleteTodo`
+- `app/api/todos/[id]/route.ts` — added `DELETE` handler
+- `app/api/todos/[id]/route.test.ts` — extended with DELETE describe block
+- `_bmad-output/implementation-artifacts/3-1-delete-api-route-handler.md` — this story spec

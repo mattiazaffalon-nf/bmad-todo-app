@@ -3,9 +3,15 @@ import { sql } from "drizzle-orm";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/db/client";
 import * as queries from "@/db/queries";
-import { PATCH } from "./route";
+import { DELETE, PATCH } from "./route";
 
 const uuid = () => crypto.randomUUID();
+
+const del = (id: string) =>
+  DELETE(
+    new Request(`http://localhost/api/todos/${id}`, { method: "DELETE" }),
+    { params: Promise.resolve({ id }) } as never,
+  );
 
 const patch = (id: string, body: unknown) =>
   PATCH(
@@ -141,6 +147,42 @@ describe("app/api/todos/[id] route handlers", () => {
 
       const id = uuid();
       const res = await patch(id, { completed: true });
+      expect(res.status).toBe(500);
+      const body = await res.json();
+      expect(body).toEqual({ code: "internal_error", message: "Something went wrong" });
+      expect(errorSpy).toHaveBeenCalled();
+    });
+  });
+
+  describe("DELETE /api/todos/[id]", () => {
+    it("removes a row and returns 204", async () => {
+      const id = uuid();
+      await queries.createTodo({ id, description: "to delete" }, null);
+      const res = await del(id);
+      expect(res.status).toBe(204);
+    });
+
+    it("returns 204 for an already-deleted id (idempotent)", async () => {
+      const id = uuid();
+      await queries.createTodo({ id, description: "to delete" }, null);
+      await del(id);
+      const res = await del(id);
+      expect(res.status).toBe(204);
+    });
+
+    it("returns 400 validation_failed for a malformed id and does not touch the DB", async () => {
+      const deleteSpy = vi.spyOn(queries, "deleteTodo");
+      const res = await del("not-a-uuid");
+      expect(res.status).toBe(400);
+      const body = await res.json();
+      expect(body.code).toBe("validation_failed");
+      expect(deleteSpy).not.toHaveBeenCalled();
+    });
+
+    it("returns 500 internal_error when the DB layer throws", async () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      vi.spyOn(queries, "deleteTodo").mockRejectedValueOnce(new Error("boom"));
+      const res = await del(uuid());
       expect(res.status).toBe(500);
       const body = await res.json();
       expect(body).toEqual({ code: "internal_error", message: "Something went wrong" });
