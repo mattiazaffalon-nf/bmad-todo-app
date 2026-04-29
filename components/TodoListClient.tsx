@@ -1,8 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useReducer, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCreateTodo } from "@/hooks/use-create-todo";
 import { useDeleteTodo } from "@/hooks/use-delete-todo";
+import { useToggleTodo } from "@/hooks/use-toggle-todo";
 import { UNDO_TIMEOUT_MS } from "@/lib/constants";
+import type { OptimisticTodo } from "@/lib/validation";
 import { TaskInput } from "./TaskInput";
 import { TaskList } from "./TaskList";
 import { UndoToast } from "./UndoToast";
@@ -26,7 +30,10 @@ function toastReducer(state: ToastStatus, action: ToastAction): ToastStatus {
 }
 
 export function TodoListClient() {
+  const queryClient = useQueryClient();
+  const createTodo = useCreateTodo();
   const deleteTodo = useDeleteTodo();
+  const toggleTodo = useToggleTodo();
   const [toastStatus, dispatch] = useReducer(toastReducer, "idle");
   const dismissTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -78,6 +85,26 @@ export function TodoListClient() {
     [deleteTodo],
   );
 
+  const handleRetry = useCallback(
+    (id: string) => {
+      const todos = queryClient.getQueryData<OptimisticTodo[]>(["todos"]) ?? [];
+      const todo = todos.find((t) => t.id === id && t.syncStatus === "failed");
+      if (!todo) return;
+      switch (todo.failedMutation) {
+        case "create":
+          createTodo.mutate({ id: todo.id, description: todo.description });
+          break;
+        case "toggle":
+          toggleTodo.mutate({ id: todo.id, completed: todo.completed });
+          break;
+        case "delete":
+          void deleteTodo.retryDelete(todo.id);
+          break;
+      }
+    },
+    [createTodo, deleteTodo, queryClient, toggleTodo],
+  );
+
   const handleUndo = useCallback(() => {
     if (dismissTimerRef.current) {
       clearTimeout(dismissTimerRef.current);
@@ -104,7 +131,7 @@ export function TodoListClient() {
           onDismiss={handleDismiss}
         />
       </div>
-      <TaskList onDelete={handleDelete} />
+      <TaskList onDelete={handleDelete} onRetry={handleRetry} />
       <TaskInput />
     </div>
   );

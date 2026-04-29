@@ -37,7 +37,7 @@ export function useDeleteTodo() {
           queryClient.setQueryData<OptimisticTodo[]>(["todos"], (old = []) => {
             const restoredTodo = previous.find((t) => t.id === id);
             if (!restoredTodo) return old;
-            return [...old, { ...restoredTodo, syncStatus: "failed" as const }];
+            return [...old, { ...restoredTodo, syncStatus: "failed" as const, failedMutation: "delete" as const }];
           });
         }
       }, UNDO_TIMEOUT_MS);
@@ -56,5 +56,28 @@ export function useDeleteTodo() {
     }
   }, [queryClient]);
 
-  return { mutate, undo };
+  const retryDelete = useCallback(
+    async (id: string) => {
+      queryClient.setQueryData<OptimisticTodo[]>(["todos"], (old = []) =>
+        old.map((t) => (t.id === id ? { ...t, syncStatus: "pending" as const } : t)),
+      );
+      try {
+        await apiClient.deleteTodo(id);
+        queryClient.setQueryData<OptimisticTodo[]>(["todos"], (old = []) =>
+          old.filter((t) => t.id !== id),
+        );
+      } catch {
+        queryClient.setQueryData<OptimisticTodo[]>(["todos"], (old = []) =>
+          old.map((t) =>
+            t.id === id
+              ? { ...t, syncStatus: "failed" as const, failedMutation: "delete" as const }
+              : t,
+          ),
+        );
+      }
+    },
+    [queryClient],
+  );
+
+  return { mutate, undo, retryDelete };
 }

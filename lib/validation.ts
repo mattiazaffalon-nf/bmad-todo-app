@@ -21,4 +21,5 @@ export const TodoApiSchema = z.object({
 export type Todo = z.infer<typeof TodoApiSchema>;
 
 export type SyncStatus = "idle" | "pending" | "failed";
-export type OptimisticTodo = Todo & { syncStatus?: SyncStatus };
+export type FailedMutation = "create" | "toggle" | "delete";
+export type OptimisticTodo = Todo & { syncStatus?: SyncStatus; failedMutation?: FailedMutation };

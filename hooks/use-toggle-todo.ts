@@ -18,7 +18,7 @@ export function useToggleTodo() {
     },
     onError: (_err, variables) => {
       queryClient.setQueryData<OptimisticTodo[]>(["todos"], (old = []) =>
-        old.map((t) => (t.id === variables.id ? { ...t, syncStatus: "failed" as const } : t)),
+        old.map((t) => (t.id === variables.id ? { ...t, syncStatus: "failed" as const, failedMutation: "toggle" as const } : t)),
       );
     },
     onSuccess: (serverTodo, { id }) => {
