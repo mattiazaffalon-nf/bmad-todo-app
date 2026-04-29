@@ -1,6 +1,6 @@
 # Story 3.3: Add desktop hover-reveal trash icon and mobile swipe-left gesture (Journey 4 E2E)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -400,3 +400,14 @@ claude-sonnet-4-6
 - `components/TaskItem.test.tsx` — MODIFIED
 - `e2e/delete-undo.spec.ts` — NEW
 - `e2e/a11y.spec.ts` — MODIFIED
+
+### Review Findings
+
+- [x] [Review][Patch] Trash panel visible at rest on desktop — missing `bg-surface` on panel + `bg-background` on inner sliding content (AC #2) [components/TaskItem.tsx:106-108, 110]
+- [x] [Review][Patch] Swipe-left exit `setTimeout` not cleared on unmount + no guard against double-fire from rapid double-swipe [components/TaskItem.tsx:62-65]
+- [x] [Review][Patch] Hover trash button is invisible (opacity-0) when keyboard-focused but not hovered — add `focus-visible:opacity-100` [components/TaskItem.tsx:144-151]
+- [x] [Review][Patch] Trash-click test uses default `mockMatchMedia(true)`; AC #6 requires `mockMatchMedia(false)` (lg+) to prove independence from swipe gate [components/TaskItem.test.tsx:175-178]
+- [x] [Review][Patch] Desktop "Undo restores task" E2E doesn't `page.clock.install()` before `page.goto()` — risk of real 5s flake on slow CI [e2e/delete-undo.spec.ts:12-51]
+- [x] [Review][Defer] SSR/hydration mismatch: `useMediaQuery("(prefers-reduced-motion: reduce)")` returns false on server, motion-reduce users see animation flash before hydration [components/TaskItem.tsx:20] — deferred, pre-existing pattern (same hook used by swipe-right since Story 2.3)
+- [x] [Review][Defer] Diagonal swipe (dominant deltaY, small deltaX) causes dragX jitter during vertical scroll [components/TaskItem.tsx:36-48] — deferred, pre-existing pattern from swipe-right
+- [x] [Review][Defer] E2E specs use hardcoded UUIDs; cleanupTodos() is global, so parallel-worker test runs would clobber each other [e2e/delete-undo.spec.ts] — deferred, pre-existing project pattern across all e2e specs (complete.spec.ts, a11y.spec.ts)

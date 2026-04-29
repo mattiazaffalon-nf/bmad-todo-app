@@ -12,6 +12,8 @@ test.beforeEach(async () => {
 test("Journey 4 desktop: hover trash → click → UndoToast appears → Undo restores task", async ({
   page,
 }) => {
+  await page.clock.install();
+
   const id = "77777777-7777-4777-8777-777777777777";
   await seedTodo(id, "delete me desktop");
 

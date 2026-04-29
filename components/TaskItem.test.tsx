@@ -172,7 +172,8 @@ describe("TaskItem", () => {
     expect(screen.getByRole("button", { name: /delete task/i })).toBeInTheDocument();
   });
 
-  it("clicking trash button calls onDelete with todo.id", () => {
+  it("clicking trash button calls onDelete with todo.id at lg+ viewport (independent of swipe gate)", () => {
+    mockMatchMedia(false); // lg+ — swipe disabled, but trash button must still work
     render(<ul><TaskItem todo={todo} onDelete={mockDeleteFn} /></ul>);
     fireEvent.click(screen.getByRole("button", { name: /delete task/i }));
     expect(mockDeleteFn).toHaveBeenCalledWith(todo.id);

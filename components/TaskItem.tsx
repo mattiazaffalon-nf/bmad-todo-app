@@ -19,8 +19,18 @@ export function TaskItem({ todo, onDelete }: TaskItemProps) {
   const enableSwipe = useMediaQuery("(max-width: 1023.98px) and (pointer: coarse)");
   const reduceMotion = useMediaQuery("(prefers-reduced-motion: reduce)");
   const rowRef = useRef<HTMLLIElement | null>(null);
+  const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (exitTimerRef.current !== null) {
+        clearTimeout(exitTimerRef.current);
+        exitTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const handleToggle = () => {
     if (toggleTodo.isPending) return;
@@ -55,11 +65,13 @@ export function TaskItem({ todo, onDelete }: TaskItemProps) {
       if (e.deltaX >= SWIPE_PX_THRESHOLD && e.dir === "Right") {
         handleToggle();
       } else if (e.dir === "Left" && Math.abs(e.deltaX) >= SWIPE_PX_THRESHOLD) {
+        if (exitTimerRef.current !== null) return;
         const clientWidth = rowRef.current?.clientWidth ?? 300;
         if (!reduceMotion) {
           setDragX(-clientWidth);
         }
-        setTimeout(() => {
+        exitTimerRef.current = setTimeout(() => {
+          exitTimerRef.current = null;
           onDelete?.(todo.id);
         }, reduceMotion ? 0 : 300);
         return;
@@ -103,14 +115,14 @@ export function TaskItem({ todo, onDelete }: TaskItemProps) {
       className="group min-h-[48px] py-3 px-6 flex items-center gap-3 overflow-hidden relative"
     >
       {/* Trash icon panel — sits behind the sliding content, revealed on swipe-left */}
-      <div className="absolute inset-y-0 right-0 flex items-center px-6">
+      <div className="absolute inset-y-0 right-0 flex items-center px-6 bg-surface">
         <Trash2 size={20} className="text-error-foreground" aria-hidden="true" />
       </div>
 
       <div
         style={{ transform: `translateX(${dragX}px)` }}
         className={[
-          "flex items-center gap-3 flex-1",
+          "flex items-center gap-3 flex-1 bg-background",
           isDragging
             ? "transition-none"
             : dragX < 0
@@ -145,7 +157,7 @@ export function TaskItem({ todo, onDelete }: TaskItemProps) {
           type="button"
           aria-label="Delete task"
           onClick={() => onDelete?.(todo.id)}
-          className="w-[44px] h-[44px] flex items-center justify-center flex-shrink-0 opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity duration-200 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          className="w-[44px] h-[44px] flex items-center justify-center flex-shrink-0 opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100 transition-opacity duration-200 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <Trash2 size={20} />
         </button>
