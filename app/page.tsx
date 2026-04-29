@@ -1,5 +1,5 @@
 import { dehydrate, HydrationBoundary, QueryClient } from "@tanstack/react-query";
-import { TaskList } from "@/components/TaskList";
+import { TodoListClient } from "@/components/TodoListClient";
 import { getTodos } from "@/db/queries";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +14,7 @@ export default async function Home() {
   return (
     <main className="flex flex-1 flex-col items-center bg-background">
       <HydrationBoundary state={dehydrate(queryClient)}>
-        <TaskList />
+        <TodoListClient />
       </HydrationBoundary>
     </main>
   );

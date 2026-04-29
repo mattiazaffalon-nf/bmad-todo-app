@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { TodoApiSchema, type Todo } from "./validation";
+import { TodoApiSchema, type Todo, type TodoCreateInput } from "./validation";
 
 export class ApiError extends Error {
   constructor(
@@ -22,5 +22,16 @@ export const apiClient = {
   async listTodos(): Promise<Todo[]> {
     const body = await fetchJson("/api/todos", z.object({ todos: z.array(TodoApiSchema) }));
     return body.todos;
+  },
+
+  async createTodo(input: TodoCreateInput): Promise<Todo> {
+    const res = await fetch("/api/todos", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(input),
+    });
+    if (!res.ok) throw new ApiError(res.status, `HTTP ${res.status}`);
+    const body = z.object({ todo: TodoApiSchema }).parse(await res.json());
+    return body.todo;
   },
 };
