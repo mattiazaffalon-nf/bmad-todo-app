@@ -2,7 +2,7 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { db } from "./client";
-import { createTodo, getTodoById, getTodos } from "./queries";
+import { createTodo, getTodoById, getTodos, updateTodo } from "./queries";
 
 const uuid = () => crypto.randomUUID();
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -88,5 +88,47 @@ describe("db/queries", () => {
   it("getTodoById returns null when no row exists", async () => {
     const row = await getTodoById(uuid(), null);
     expect(row).toBeNull();
+  });
+
+  it("updateTodo flips completed and returns the updated row", async () => {
+    const id = uuid();
+    await createTodo({ id, description: "buy milk" }, null);
+
+    const updated = await updateTodo(id, { completed: true }, null);
+    expect(updated).not.toBeNull();
+    expect(updated?.id).toBe(id);
+    expect(updated?.completed).toBe(true);
+
+    const persisted = await getTodoById(id, null);
+    expect(persisted?.completed).toBe(true);
+  });
+
+  it("updateTodo returns null when no row matches the supplied id", async () => {
+    const result = await updateTodo(uuid(), { completed: true }, null);
+    expect(result).toBeNull();
+  });
+
+  it("updateTodo is idempotent: same payload twice returns the same completed state", async () => {
+    const id = uuid();
+    await createTodo({ id, description: "buy milk" }, null);
+
+    const first = await updateTodo(id, { completed: true }, null);
+    const second = await updateTodo(id, { completed: true }, null);
+
+    expect(first?.completed).toBe(true);
+    expect(second?.completed).toBe(true);
+    expect(second?.id).toBe(first?.id);
+  });
+
+  it("updateTodo only mutates the targeted row", async () => {
+    const a = uuid();
+    const b = uuid();
+    await createTodo({ id: a, description: "a" }, null);
+    await createTodo({ id: b, description: "b" }, null);
+
+    await updateTodo(a, { completed: true }, null);
+
+    const rowB = await getTodoById(b, null);
+    expect(rowB?.completed).toBe(false);
   });
 });

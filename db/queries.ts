@@ -18,6 +18,19 @@ export async function getTodoById(id: string, userId: string | null): Promise<To
   return row ?? null;
 }
 
+export async function updateTodo(
+  id: string,
+  patch: { completed: boolean },
+  userId: string | null,
+): Promise<Todo | null> {
+  const [row] = await db
+    .update(todos)
+    .set({ completed: patch.completed })
+    .where(and(eq(todos.id, id), userIdFilter(userId)))
+    .returning();
+  return row ?? null;
+}
+
 export async function createTodo(
   input: TodoCreateInput,
   userId: string | null,
