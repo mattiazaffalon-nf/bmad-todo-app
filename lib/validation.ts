@@ -19,3 +19,6 @@ export const TodoApiSchema = z.object({
   userId: z.string().uuid().nullable(),
 });
 export type Todo = z.infer<typeof TodoApiSchema>;
+
+export type SyncStatus = "idle" | "pending" | "failed";
+export type OptimisticTodo = Todo & { syncStatus?: SyncStatus };
