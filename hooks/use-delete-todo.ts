@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api-client";
 import { UNDO_TIMEOUT_MS } from "@/lib/constants";
@@ -9,8 +9,16 @@ import type { OptimisticTodo } from "@/lib/validation";
 export function useDeleteTodo() {
   const queryClient = useQueryClient();
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [pendingId, setPendingId] = useState<string | null>(null);
-  const [previousSnapshot, setPreviousSnapshot] = useState<OptimisticTodo[] | null>(null);
+  const snapshotRef = useRef<OptimisticTodo[] | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current !== null) {
+        clearTimeout(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, []);
 
   const mutate = useCallback(
     (id: string) => {
@@ -19,8 +27,7 @@ export function useDeleteTodo() {
       queryClient.setQueryData<OptimisticTodo[]>(["todos"], (old = []) =>
         old.filter((t) => t.id !== id),
       );
-      setPendingId(id);
-      setPreviousSnapshot(previous);
+      snapshotRef.current = previous;
 
       timerRef.current = setTimeout(async () => {
         timerRef.current = null;
@@ -43,12 +50,11 @@ export function useDeleteTodo() {
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    if (previousSnapshot !== null) {
-      queryClient.setQueryData<OptimisticTodo[]>(["todos"], previousSnapshot);
+    if (snapshotRef.current !== null) {
+      queryClient.setQueryData<OptimisticTodo[]>(["todos"], snapshotRef.current);
+      snapshotRef.current = null;
     }
-    setPendingId(null);
-    setPreviousSnapshot(null);
-  }, [queryClient, previousSnapshot]);
+  }, [queryClient]);
 
-  return { mutate, undo, pendingId, previousSnapshot };
+  return { mutate, undo };
 }

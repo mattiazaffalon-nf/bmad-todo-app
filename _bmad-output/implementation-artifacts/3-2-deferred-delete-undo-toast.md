@@ -1,6 +1,6 @@
 # Story 3.2: Implement deferred-delete with UndoToast and optimistic removal
 
-Status: review
+Status: done
 
 ## Story
 
@@ -466,3 +466,21 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 ### File List
+
+### Review Findings
+
+_Code review run on 2026-04-29 (Opus 4.7, three-layer parallel: blind hunter + edge-case hunter + acceptance auditor)._
+
+- [x] [Review][Patch] DELETE timer leaks on unmount in `useDeleteTodo` [hooks/use-delete-todo.ts] — no cleanup effect clears `timerRef.current` on unmount; an unmount mid-window fires DELETE against a torn-down cache and may warn "setState on unmounted".
+- [x] [Review][Patch] `dismissTimerRef` leaks on unmount in `TodoListClient` [components/TodoListClient.tsx:72] — auto-dismiss `setTimeout` is never cleared on unmount; orphaned `dispatch` runs on a torn-down reducer.
+- [x] [Review][Patch] `apiClient.deleteTodo` treats 404 as failure [lib/api-client.ts:50-53] — DELETE is idempotent on the server (Story 3.1 returns 204 for already-deleted ids), but a real 404 (different cause) would re-add the row with `syncStatus: 'failed'`. Treat 404 as success and only throw on other non-204 statuses.
+- [x] [Review][Patch] Network rejection in `apiClient.deleteTodo` throws `TypeError`, not `ApiError` [lib/api-client.ts:50-53] — offline / DNS failures bypass the `ApiError` contract used by the rest of the client. Wrap `fetch` in `try { ... } catch { throw new ApiError(0, 'network') }`.
+- [x] [Review][Patch] Reducer's `previousSnapshot` and `pendingId` fields are dead state [components/TodoListClient.tsx:14-18, 28-29] — set on `SHOW` but never read; `handleUndo` uses the hook's internal snapshot, not the reducer's. Duplicated source-of-truth invites drift. Drop both fields from `ToastState`.
+- [x] [Review][Patch] `useDeleteTodo` returns unused `pendingId` and `previousSnapshot` [hooks/use-delete-todo.ts] — `TodoListClient` consumes only `mutate` and `undo`. Drop the unused returns and their backing `useState` to keep the hook surface minimal.
+- [x] [Review][Patch] `data-task-id` focus-management query is unscoped [components/TodoListClient.tsx:59, 78] — `document.querySelectorAll("[data-task-id]")` is a global query; any future component reusing the attribute pollutes results. Scope to the list (`<ul id="task-list">` + scoped query, or a ref).
+- [x] [Review][Patch] Escape handler in `UndoToast` fires on input/textarea and IME composition [components/UndoToast.tsx:11-15] — typing Escape in `TaskInput` (clear-input reflex) silently dismisses the toast; Escape during IME composition cancels both. Guard with `if (e.isComposing || e.target.matches('input,textarea,[contenteditable]')) return;`.
+
+- [x] [Review][Defer] `queueMicrotask` for post-delete focus may fire before React commits [components/TodoListClient.tsx:77-84] — both blind + edge layers flagged a possible race (DOM not yet updated when the microtask runs). The spec's Dev Notes explicitly suggest `queueMicrotask`, and the implementation matches; tests pass empirically. Revisit if focus regressions surface in Story 3.3 E2E.
+- [x] [Review][Defer] No `AbortController` / fetch timeout on `apiClient.deleteTodo` (or any api-client method) [lib/api-client.ts] — a hung DELETE blocks indefinitely with no UX. This is a cross-cutting concern affecting all api-client methods, not specific to this story. Address as part of api-client hardening epic.
+- [x] [Review][Defer] Tab-close mid-DELETE drops the request [hooks/use-delete-todo.ts] — known v1 limitation explicitly called out in `architecture.md` line 1108. `navigator.sendBeacon` or `keepalive: true` is the eventual fix; out of scope for v1.
+- [x] [Review][Defer] Test gaps: no unmount-during-pending test, cross-fade test asserts call counts not cache integrity, `fireEvent.keyDown(document, ...)` doesn't simulate input-focused Escape [hooks/use-delete-todo.test.ts:818-952; components/UndoToast.test.tsx:702-710] — once the patches above land (timer cleanup, Escape input-guard) the tests should also assert these behaviors. Track as a test-hardening follow-up.

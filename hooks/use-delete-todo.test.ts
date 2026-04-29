@@ -61,7 +61,6 @@ describe("useDeleteTodo", () => {
 
     const data = queryClient.getQueryData<OptimisticTodo[]>(["todos"]);
     expect(data).toEqual([]);
-    expect(result.current.pendingId).toBe(TEST_ID);
   });
 
   it("undo restores the cache snapshot and clears the timer", async () => {
@@ -83,7 +82,6 @@ describe("useDeleteTodo", () => {
 
     const data = queryClient.getQueryData<OptimisticTodo[]>(["todos"]);
     expect(data).toEqual([EXISTING_TODO]);
-    expect(result.current.pendingId).toBeNull();
 
     // Advance timer — DELETE should NOT have fired
     await act(async () => {

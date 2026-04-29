@@ -48,3 +48,10 @@
 - `internalError()` discards DB error context (no structured logging beyond `console.error(err)`). Pre-existing pattern across all route handlers; needs a logging-standardization epic.
 - No explicit test for "valid UUID that never existed" — covered indirectly by the "already-deleted (idempotent)" test which exercises the same `0 rows affected → 204` code path. Add a dedicated test if a future refactor splits the two paths.
 - Edge-input pinning (null-byte in id, `ctx.params` Promise rejection) — `IdSchema = z.string().uuid()` rejects `\0` strings before the query layer; `ctx.params` rejection is theoretical. Both pre-existing patterns shared with PATCH.
+
+## Deferred from: code review of 3-2-deferred-delete-undo-toast (2026-04-29)
+
+- `queueMicrotask` for post-delete focus may fire before React commits the optimistic-remove render. Spec dev notes recommend `queueMicrotask`; implementation matches and tests pass. If focus regressions surface in Story 3.3's delete-undo Playwright spec, switch to `requestAnimationFrame` or `flushSync`.
+- No `AbortController` / fetch timeout on any api-client method (only `deleteTodo` is touched in this story; the gap is repo-wide). A hung DELETE blocks indefinitely with no UX. Track as api-client hardening epic.
+- Tab-close mid-DELETE drops the request — known v1 limitation per `architecture.md` line 1108. `navigator.sendBeacon` or `fetch({ keepalive: true })` is the eventual fix.
+- Test hardening for the deferred-delete pattern: (a) add a test that unmounts the hook mid-window and asserts no timer fires; (b) cross-fade test should assert cache integrity between the two deletions, not just DELETE call counts; (c) `UndoToast` Escape test should originate from a focused `<input>` to verify the input-guard once it lands.

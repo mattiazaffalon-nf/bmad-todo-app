@@ -47,7 +47,13 @@ export const apiClient = {
   },
 
   async deleteTodo(id: string): Promise<void> {
-    const res = await fetch(`/api/todos/${id}`, { method: "DELETE" });
-    if (res.status !== 204) throw new ApiError(res.status, `HTTP ${res.status}`);
+    let res: Response;
+    try {
+      res = await fetch(`/api/todos/${id}`, { method: "DELETE" });
+    } catch {
+      throw new ApiError(0, "network");
+    }
+    if (res.status === 204 || res.status === 404) return;
+    throw new ApiError(res.status, `HTTP ${res.status}`);
   },
 };

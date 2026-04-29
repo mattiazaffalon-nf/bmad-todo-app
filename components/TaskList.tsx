@@ -16,7 +16,7 @@ export function TaskList({ onDelete }: { onDelete?: (id: string) => void }) {
   }
 
   return (
-    <ul role="list" className="w-full max-w-[640px] mx-auto">
+    <ul id="task-list" role="list" className="w-full max-w-[640px] mx-auto">
       {todos.map((todo) => (
         <TaskItem key={todo.id} todo={todo} onDelete={onDelete} />
       ))}

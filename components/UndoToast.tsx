@@ -12,7 +12,14 @@ export function UndoToast({ visible, onUndo, onDismiss }: UndoToastProps) {
   useEffect(() => {
     if (!visible) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onDismiss();
+      if (e.key !== "Escape") return;
+      if (e.isComposing) return;
+      const target = e.target;
+      if (target instanceof HTMLElement) {
+        const tag = target.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) return;
+      }
+      onDismiss();
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
