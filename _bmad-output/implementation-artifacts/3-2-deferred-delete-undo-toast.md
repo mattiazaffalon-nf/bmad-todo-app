@@ -1,6 +1,6 @@
 # Story 3.2: Implement deferred-delete with UndoToast and optimistic removal
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -58,70 +58,71 @@ So that I can remove tasks confidently and recover from accidental deletions wit
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create `lib/constants.ts` (AC: #1)**
-  - [ ] Export `UNDO_TIMEOUT_MS = 5000`
-  - [ ] Export `MAX_DESCRIPTION_LENGTH = 280`
-  - [ ] (Do NOT import in `lib/validation.ts` yet — scoped to this story; hook and toast will import from here)
-  - [ ] Confirm `pnpm typecheck` passes
+- [x] **Task 1: Create `lib/constants.ts` (AC: #1)**
+  - [x] Export `UNDO_TIMEOUT_MS = 5000`
+  - [x] Export `MAX_DESCRIPTION_LENGTH = 280`
+  - [x] (Do NOT import in `lib/validation.ts` yet — scoped to this story; hook and toast will import from here)
+  - [x] Confirm `pnpm typecheck` passes
 
-- [ ] **Task 2: Add `deleteTodo` to `lib/api-client.ts` (AC: #2)**
-  - [ ] Add `deleteTodo(id: string): Promise<void>` to the `apiClient` object
-  - [ ] `DELETE /api/todos/${id}`, resolve on `204`, throw `ApiError` on anything else
-  - [ ] Pattern mirrors existing `toggleTodo` but no response body to parse
-  - [ ] Confirm `pnpm typecheck` passes
+- [x] **Task 2: Add `deleteTodo` to `lib/api-client.ts` (AC: #2)**
+  - [x] Add `deleteTodo(id: string): Promise<void>` to the `apiClient` object
+  - [x] `DELETE /api/todos/${id}`, resolve on `204`, throw `ApiError` on anything else
+  - [x] Pattern mirrors existing `toggleTodo` but no response body to parse
+  - [x] Confirm `pnpm typecheck` passes
 
-- [ ] **Task 3: Create `hooks/use-delete-todo.ts` (AC: #3)**
-  - [ ] Implement `useDeleteTodo()` returning `{ mutate, undo, pendingId, previousSnapshot }`
-  - [ ] `mutate(id)`: cancel queries → snapshot → filter → setState → schedule timer (fires `apiClient.deleteTodo`; on failure re-adds with `syncStatus: 'failed'`)
-  - [ ] `undo()`: clearTimeout, restore cache via `setQueryData`, reset state
-  - [ ] Import `UNDO_TIMEOUT_MS` from `@/lib/constants`
-  - [ ] `pnpm typecheck` passes
+- [x] **Task 3: Create `hooks/use-delete-todo.ts` (AC: #3)**
+  - [x] Implement `useDeleteTodo()` returning `{ mutate, undo, pendingId, previousSnapshot }`
+  - [x] `mutate(id)`: cancel queries → snapshot → filter → setState → schedule timer (fires `apiClient.deleteTodo`; on failure re-adds with `syncStatus: 'failed'`)
+  - [x] `undo()`: clearTimeout, restore cache via `setQueryData`, reset state
+  - [x] Import `UNDO_TIMEOUT_MS` from `@/lib/constants`
+  - [x] `pnpm typecheck` passes
 
-- [ ] **Task 4: Write `hooks/use-delete-todo.test.ts` (AC: #8)**
-  - [ ] Use `vi.useFakeTimers()` to control the 5s delay
-  - [ ] Mock `apiClient` so no real HTTP in unit tests
-  - [ ] 5 tests: optimistic remove, undo cancels timer + restores, timer fires DELETE, server error re-adds with failed syncStatus, second `mutate` while first is pending (cross-fade — previous timer still fires)
-  - [ ] All pass with `pnpm test`
+- [x] **Task 4: Write `hooks/use-delete-todo.test.ts` (AC: #8)**
+  - [x] Use `vi.useFakeTimers()` to control the 5s delay
+  - [x] Mock `apiClient` so no real HTTP in unit tests
+  - [x] 5 tests: optimistic remove, undo cancels timer + restores, timer fires DELETE, server error re-adds with failed syncStatus, second `mutate` while first is pending (cross-fade — previous timer still fires)
+  - [x] All pass with `pnpm test`
 
-- [ ] **Task 5: Create `components/UndoToast.tsx` (AC: #4, #7)**
-  - [ ] Props: `{ visible: boolean; onUndo: () => void; onDismiss: () => void }`
-  - [ ] Anatomy: pill container, "Task deleted" label, "Undo" button
-  - [ ] `role="status"` with `aria-live="polite"`
-  - [ ] Opacity fade via Tailwind transition classes + `motion-reduce:transition-none`
-  - [ ] Escape key listener on `document` (add/remove in `useEffect`)
-  - [ ] No internal timer — driven by props
-  - [ ] `pnpm typecheck` passes
+- [x] **Task 5: Create `components/UndoToast.tsx` (AC: #4, #7)**
+  - [x] Props: `{ visible: boolean; onUndo: () => void; onDismiss: () => void }`
+  - [x] Anatomy: pill container, "Task deleted" label, "Undo" button
+  - [x] `role="status"` with `aria-live="polite"`
+  - [x] Opacity fade via Tailwind transition classes + `motion-reduce:transition-none`
+  - [x] Escape key listener on `document` (add/remove in `useEffect`)
+  - [x] No internal timer — driven by props
+  - [x] `pnpm typecheck` passes
 
-- [ ] **Task 6: Write `components/UndoToast.test.tsx` (AC: #8)**
-  - [ ] Renders correctly when `visible=true`
-  - [ ] Does not render content when `visible=false`
-  - [ ] "Undo" button click calls `onUndo`
-  - [ ] Escape keydown calls `onDismiss` (not `onUndo`)
-  - [ ] All pass with `pnpm test`
+- [x] **Task 6: Write `components/UndoToast.test.tsx` (AC: #8)**
+  - [x] Renders correctly when `visible=true`
+  - [x] Does not render content when `visible=false`
+  - [x] "Undo" button click calls `onUndo`
+  - [x] Escape keydown calls `onDismiss` (not `onUndo`)
+  - [x] All pass with `pnpm test`
 
-- [ ] **Task 7: Extend `components/TodoListClient.tsx` (AC: #5, #6)**
-  - [ ] Add `useReducer` for `{ status, pendingId, previousSnapshot }` with `SHOW`/`DISMISS`/`UNDO` actions
-  - [ ] Call `useDeleteTodo()` at this level; define `handleDelete(id)` that calls `mutate(id)`, dispatches `SHOW`
-  - [ ] Set up auto-dismiss `setTimeout` after `UNDO_TIMEOUT_MS` (separate from the DELETE timer in the hook)
-  - [ ] Handle `UNDO`: call `deleteTodo.undo()`, dispatch `DISMISS`
-  - [ ] Handle `DISMISS`: set `status: 'dismissing'`, after 200ms animation set `status: 'idle'`
-  - [ ] Render `<UndoToast>` above the content (placed before `TaskInput` in the JSX)
-  - [ ] Pass `onDelete={handleDelete}` down to `TaskList` → `TaskItem` via props
-  - [ ] Focus management after delete (AC: #6)
-  - [ ] Cross-fade: if `status !== 'idle'` when a new delete fires, let the previous timer complete and dispatch a fresh SHOW
-  - [ ] `pnpm typecheck` and `pnpm lint` pass
+- [x] **Task 7: Extend `components/TodoListClient.tsx` (AC: #5, #6)**
+  - [x] Add `useReducer` for `{ status, pendingId, previousSnapshot }` with `SHOW`/`DISMISS`/`UNDO`/`IDLE` actions
+  - [x] Call `useDeleteTodo()` at this level; define `handleDelete(id)` that calls `mutate(id)`, dispatches `SHOW`
+  - [x] Set up auto-dismiss `setTimeout` after `UNDO_TIMEOUT_MS` (separate from the DELETE timer in the hook)
+  - [x] Handle `UNDO`: call `deleteTodo.undo()`, dispatch `UNDO` → `DISMISS`
+  - [x] Handle `DISMISS`: set `status: 'dismissing'`, after 200ms animation dispatch `IDLE`
+  - [x] Render `<UndoToast>` above the content (placed before `TaskList` in the JSX)
+  - [x] Pass `onDelete={handleDelete}` down to `TaskList` → `TaskItem` via props
+  - [x] Focus management after delete (AC: #6)
+  - [x] Cross-fade: cancel previous dismiss timer on new delete; fresh SHOW dispatched
+  - [x] `pnpm typecheck` and `pnpm lint` pass
 
-- [ ] **Task 8: Update `TaskList` and `TaskItem` to accept `onDelete` prop**
-  - [ ] `TaskList` receives and forwards `onDelete: (id: string) => void` prop to each `TaskItem`
-  - [ ] `TaskItem` receives `onDelete` prop but does NOT call it yet — Story 3.3 wires the UI affordances; for now the prop is wired in but the trigger is not exposed in the UI (delete button / swipe-left is Story 3.3)
-  - [ ] Existing tests in `TaskList.test.tsx` and `TaskItem.test.tsx` must still pass (no new required behavior; just add the prop)
-  - [ ] `pnpm typecheck` passes
+- [x] **Task 8: Update `TaskList` and `TaskItem` to accept `onDelete` prop**
+  - [x] `TaskList` receives and forwards `onDelete?: (id: string) => void` prop to each `TaskItem`
+  - [x] `TaskItem` accepts `onDelete` in its Props interface but does NOT call it yet (Story 3.3 wires the affordances); added `data-task-id` attribute for focus management
+  - [x] Added `id="task-input"` to `TaskInput` for focus-after-delete
+  - [x] Existing tests in `TaskList.test.tsx` and `TaskItem.test.tsx` still pass (prop is optional)
+  - [x] `pnpm typecheck` passes
 
-- [ ] **Task 9: Verify all gates (AC: #9)**
-  - [ ] `pnpm lint` — clean
-  - [ ] `pnpm typecheck` — clean
-  - [ ] `pnpm test` — all tests green (103 existing + new tests)
-  - [ ] `pnpm build` — clean
+- [x] **Task 9: Verify all gates (AC: #9)**
+  - [x] `pnpm lint` — clean
+  - [x] `pnpm typecheck` — clean
+  - [x] `pnpm test` — 114/114 green (103 existing + 11 new)
+  - [x] `pnpm build` — clean
 
 ## Dev Notes
 

@@ -9,7 +9,13 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 
 const SWIPE_PX_THRESHOLD = 80;
 
-export function TaskItem({ todo }: { todo: OptimisticTodo }) {
+interface TaskItemProps {
+  todo: OptimisticTodo;
+  /** Wired by TodoListClient; called by Story 3.3's delete affordances. */
+  onDelete?: (id: string) => void;
+}
+
+export function TaskItem({ todo }: TaskItemProps) {
   const toggleTodo = useToggleTodo();
   const enableSwipe = useMediaQuery("(max-width: 1023.98px) and (pointer: coarse)");
   const rowRef = useRef<HTMLLIElement | null>(null);
@@ -72,6 +78,7 @@ export function TaskItem({ todo }: { todo: OptimisticTodo }) {
     <li
       role="listitem"
       ref={setRefs}
+      data-task-id={todo.id}
       className="min-h-[48px] py-3 px-6 flex items-center gap-3 overflow-hidden"
     >
       <div
