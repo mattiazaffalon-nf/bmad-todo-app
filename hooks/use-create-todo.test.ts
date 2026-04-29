@@ -53,7 +53,7 @@ describe("useCreateTodo", () => {
     });
   });
 
-  it("onError restores previous cache snapshot", async () => {
+  it("onError marks the failed entry syncStatus:'failed' (task stays in list)", async () => {
     const existing: OptimisticTodo = { ...SERVER_TODO, id: "existing", description: "existing" };
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     queryClient.setQueryData<OptimisticTodo[]>(["todos"], [existing]);
@@ -84,7 +84,11 @@ describe("useCreateTodo", () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
 
     const data = queryClient.getQueryData<OptimisticTodo[]>(["todos"]);
-    expect(data).toEqual([existing]);
+    // Task remains in the list (not rolled back), marked as failed
+    expect(data).toHaveLength(2);
+    const failedEntry = data?.find((t) => t.id === TEST_ID);
+    expect(failedEntry?.syncStatus).toBe("failed");
+    expect(failedEntry?.description).toBe("test");
   });
 
   it("onSuccess replaces optimistic entry with server response and syncStatus idle", async () => {

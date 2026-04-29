@@ -16,10 +16,10 @@ export function useToggleTodo() {
       );
       return { previous };
     },
-    onError: (_err, _vars, ctx) => {
-      if (ctx?.previous !== undefined) {
-        queryClient.setQueryData<OptimisticTodo[]>(["todos"], ctx.previous);
-      }
+    onError: (_err, variables) => {
+      queryClient.setQueryData<OptimisticTodo[]>(["todos"], (old = []) =>
+        old.map((t) => (t.id === variables.id ? { ...t, syncStatus: "failed" as const } : t)),
+      );
     },
     onSuccess: (serverTodo, { id }) => {
       queryClient.setQueryData<OptimisticTodo[]>(["todos"], (old = []) =>

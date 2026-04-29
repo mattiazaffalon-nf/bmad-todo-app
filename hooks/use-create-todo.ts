@@ -22,10 +22,10 @@ export function useCreateTodo() {
       ]);
       return { previous };
     },
-    onError: (_err, _input, ctx) => {
-      if (ctx?.previous !== undefined) {
-        queryClient.setQueryData<OptimisticTodo[]>(["todos"], ctx.previous);
-      }
+    onError: (_err, input) => {
+      queryClient.setQueryData<OptimisticTodo[]>(["todos"], (old = []) =>
+        old.map((t) => (t.id === input.id ? { ...t, syncStatus: "failed" as const } : t)),
+      );
     },
     onSuccess: (serverTodo, input) => {
       queryClient.setQueryData<OptimisticTodo[]>(["todos"], (old = []) =>

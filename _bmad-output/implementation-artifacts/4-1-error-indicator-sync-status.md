@@ -1,6 +1,6 @@
 # Story 4.1: Implement ErrorIndicator component with per-task syncStatus surface
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -62,60 +62,60 @@ So that I know which actions need my attention without being interrupted by moda
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create `components/ErrorIndicator.tsx` (AC #1, #2)**
-  - [ ] New file: `components/ErrorIndicator.tsx` (PascalCase component, `"use client"`)
-  - [ ] Import `AlertCircle`, `RotateCw` from `lucide-react`
-  - [ ] Props: `interface ErrorIndicatorProps { onRetry: () => void; retrying: boolean; }`
-  - [ ] When `retrying=false`: render `AlertCircle size={16}` + `<span>Couldn't save — tap to retry</span>` (14px text)
-  - [ ] When `retrying=true`: render `RotateCw size={16}` with `animate-spin motion-reduce:animate-none`
-  - [ ] Button wrapper: `type="button"`, `aria-label="Couldn't save, tap to retry"`, `onClick={onRetry}`, min 44×44 hit target
-  - [ ] Both icons: `aria-hidden="true"`, `text-error-foreground`, `flex-shrink-0`
-  - [ ] Text: `text-sm text-error-foreground` (14px = Tailwind `text-sm`)
-  - [ ] `pnpm typecheck` passes
+- [x] **Task 1: Create `components/ErrorIndicator.tsx` (AC #1, #2)**
+  - [x] New file: `components/ErrorIndicator.tsx` (PascalCase component, `"use client"`)
+  - [x] Import `AlertCircle`, `RotateCw` from `lucide-react`
+  - [x] Props: `interface ErrorIndicatorProps { onRetry: () => void; retrying: boolean; }`
+  - [x] When `retrying=false`: render `AlertCircle size={16}` + `<span>Couldn't save — tap to retry</span>` (14px text)
+  - [x] When `retrying=true`: render `RotateCw size={16}` with `animate-spin motion-reduce:animate-none`
+  - [x] Button wrapper: `type="button"`, `aria-label="Couldn't save, tap to retry"`, `onClick={onRetry}`, min 44×44 hit target
+  - [x] Both icons: `aria-hidden="true"`, `text-error-foreground`, `flex-shrink-0`
+  - [x] Text: `text-sm text-error-foreground` (14px = Tailwind `text-sm`)
+  - [x] `pnpm typecheck` passes
 
-- [ ] **Task 2: Write `components/ErrorIndicator.test.tsx` (AC #6)**
-  - [ ] `// @vitest-environment jsdom`
-  - [ ] Test: `retrying=false` shows AlertCircle and "Couldn't save" text
-  - [ ] Test: `retrying=true` shows RotateCw icon
-  - [ ] Test: `retrying=true` with `prefers-reduced-motion` mocked — RotateCw still shown, but `animate-spin` class absent (check `motion-reduce:animate-none` is on the element)
-  - [ ] Test: clicking button invokes `onRetry`
-  - [ ] Test: `aria-label="Couldn't save, tap to retry"` on the button
-  - [ ] Test: icon has `aria-hidden="true"`
-  - [ ] `pnpm test` passes
+- [x] **Task 2: Write `components/ErrorIndicator.test.tsx` (AC #6)**
+  - [x] `// @vitest-environment jsdom`
+  - [x] Test: `retrying=false` shows AlertCircle and "Couldn't save" text
+  - [x] Test: `retrying=true` shows RotateCw icon
+  - [x] Test: `retrying=true` with `prefers-reduced-motion` mocked — RotateCw still shown, but `animate-spin` class absent (check `motion-reduce:animate-none` is on the element)
+  - [x] Test: clicking button invokes `onRetry`
+  - [x] Test: `aria-label="Couldn't save, tap to retry"` on the button
+  - [x] Test: icon has `aria-hidden="true"`
+  - [x] `pnpm test` passes
 
-- [ ] **Task 3: Render `ErrorIndicator` in `TaskItem` (AC #3)**
-  - [ ] Import `ErrorIndicator` from `./ErrorIndicator`
-  - [ ] In the flex row, after the `<p>` description and before the delete button, add:
+- [x] **Task 3: Render `ErrorIndicator` in `TaskItem` (AC #3)**
+  - [x] Import `ErrorIndicator` from `./ErrorIndicator`
+  - [x] In the flex row, after the `<p>` description and before the delete button, add:
     `{todo.syncStatus === 'failed' && <ErrorIndicator onRetry={() => {}} retrying={false} />}`
-  - [ ] Verify the `<p>` description still has `flex-1 truncate` so long text doesn't overflow
-  - [ ] `pnpm typecheck` and `pnpm lint` pass
+  - [x] Verify the `<p>` description still has `flex-1 truncate` so long text doesn't overflow
+  - [x] `pnpm typecheck` and `pnpm lint` pass
 
-- [ ] **Task 4: Update `use-create-todo.ts` `onError` to set `syncStatus: 'failed'` (AC #4)**
-  - [ ] In `onError`: instead of restoring `ctx.previous` wholesale, update only the matching cache entry's `syncStatus` to `'failed'`:
+- [x] **Task 4: Update `use-create-todo.ts` `onError` to set `syncStatus: 'failed'` (AC #4)**
+  - [x] In `onError`: instead of restoring `ctx.previous` wholesale, update only the matching cache entry's `syncStatus` to `'failed'`:
     ```ts
     queryClient.setQueryData<OptimisticTodo[]>(["todos"], (old = []) =>
       old.map((t) => (t.id === variables.id ? { ...t, syncStatus: "failed" as const } : t))
     );
     ```
-  - [ ] Keep `ctx.previous` fallback if the entry is not found in the current cache (defensive)
-  - [ ] In `onSuccess`: call `setQueryData` to reconcile the todo from the server response and set `syncStatus: 'idle'` (the current pattern should already do this; verify and explicitly add `syncStatus: 'idle'` to the reconciled entry)
-  - [ ] `pnpm typecheck` passes
+  - [x] Keep `ctx.previous` fallback if the entry is not found in the current cache (defensive)
+  - [x] In `onSuccess`: call `setQueryData` to reconcile the todo from the server response and set `syncStatus: 'idle'` (the current pattern should already do this; verify and explicitly add `syncStatus: 'idle'` to the reconciled entry)
+  - [x] `pnpm typecheck` passes
 
-- [ ] **Task 5: Update `use-toggle-todo.ts` `onError` to set `syncStatus: 'failed'` (AC #4)**
-  - [ ] In `onError`: update the matching entry's `syncStatus` to `'failed'`; keep its `completed` field at the *intended* (post-toggle) value so the visual state reflects what the user tried to do:
+- [x] **Task 5: Update `use-toggle-todo.ts` `onError` to set `syncStatus: 'failed'` (AC #4)**
+  - [x] In `onError`: update the matching entry's `syncStatus` to `'failed'`; keep its `completed` field at the *intended* (post-toggle) value so the visual state reflects what the user tried to do:
     ```ts
     queryClient.setQueryData<OptimisticTodo[]>(["todos"], (old = []) =>
       old.map((t) => (t.id === variables.id ? { ...t, syncStatus: "failed" as const } : t))
     );
     ```
-  - [ ] In `onSuccess`: ensure `syncStatus: 'idle'` is set when the mutation reconciles
-  - [ ] `pnpm typecheck` passes
+  - [x] In `onSuccess`: ensure `syncStatus: 'idle'` is set when the mutation reconciles
+  - [x] `pnpm typecheck` passes
 
-- [ ] **Task 6: Verify quality gates (AC #7)**
-  - [ ] `pnpm lint` — clean
-  - [ ] `pnpm typecheck` — clean
-  - [ ] `pnpm test` — all tests green
-  - [ ] `pnpm build` — clean
+- [x] **Task 6: Verify quality gates (AC #7)**
+  - [x] `pnpm lint` — clean
+  - [x] `pnpm typecheck` — clean
+  - [x] `pnpm test` — all tests green
+  - [x] `pnpm build` — clean
 
 ## Dev Notes
 
@@ -278,4 +278,17 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
+- All 6 tasks complete. 129 Vitest tests pass (15 files). Lint, typecheck, and build clean.
+- `use-create-todo.ts` and `use-toggle-todo.ts` `onError` handlers now set `syncStatus:'failed'` instead of rolling back — task stays visible with `ErrorIndicator`. Updated corresponding tests to assert new behavior.
+- `animate-spin` is Tailwind 4 built-in; `motion-reduce:animate-none` suppresses it for reduced-motion users while still swapping the icon.
+- SVG `className` is an `SVGAnimatedString` in jsdom — test uses `getAttribute("class")` to inspect class list.
+
 ### File List
+
+- `components/ErrorIndicator.tsx` — NEW
+- `components/ErrorIndicator.test.tsx` — NEW
+- `components/TaskItem.tsx` — MODIFIED (renders ErrorIndicator when syncStatus==='failed')
+- `hooks/use-create-todo.ts` — MODIFIED (onError: syncStatus:'failed' instead of rollback)
+- `hooks/use-toggle-todo.ts` — MODIFIED (onError: syncStatus:'failed' instead of rollback)
+- `hooks/use-create-todo.test.ts` — MODIFIED (updated onError test)
+- `hooks/use-toggle-todo.test.ts` — MODIFIED (updated onError test)

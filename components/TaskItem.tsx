@@ -6,6 +6,7 @@ import { useSwipeable } from "react-swipeable";
 import type { OptimisticTodo } from "@/lib/validation";
 import { useToggleTodo } from "@/hooks/use-toggle-todo";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { ErrorIndicator } from "./ErrorIndicator";
 
 const SWIPE_PX_THRESHOLD = 80;
 
@@ -153,6 +154,9 @@ export function TaskItem({ todo, onDelete }: TaskItemProps) {
         >
           {todo.description}
         </p>
+        {todo.syncStatus === "failed" && (
+          <ErrorIndicator onRetry={() => {}} retrying={false} />
+        )}
         <button
           type="button"
           aria-label="Delete task"
