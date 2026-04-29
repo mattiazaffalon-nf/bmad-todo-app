@@ -167,7 +167,7 @@ export function TaskItem({ todo, onDelete, onRetry }: TaskItemProps) {
         </p>
         {todo.syncStatus === "failed" && (
           <ErrorIndicator
-            onRetry={() => { setRetrying(true); onRetry?.(todo.id); }}
+            onRetry={() => { if (onRetry) { setRetrying(true); onRetry(todo.id); } }}
             retrying={retrying}
           />
         )}

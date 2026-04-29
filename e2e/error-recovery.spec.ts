@@ -72,4 +72,8 @@ test("Journey 5 bonus: during create failure, user can still add another task in
   // The failed task has an ErrorIndicator; the successful one does not
   const errorButtons = page.getByRole("button", { name: /couldn't save/i });
   await expect(errorButtons).toHaveCount(1);
+
+  // Reload confirms the successfully-created task persists independently
+  await page.reload();
+  await expect(page.getByRole("list")).toContainText("independent task");
 });

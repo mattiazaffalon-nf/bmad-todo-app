@@ -333,3 +333,11 @@ claude-sonnet-4-6
 ### Completion Notes List
 
 ### File List
+
+### Review Findings
+
+- [x] [Review][Patch] New `it()` tests outside `describe` block in `use-create-todo.test.ts` and `use-toggle-todo.test.ts` — dismissed, tests were already inside `describe` (false positive from diff context)
+- [x] [Review][Patch] `setRetrying(true)` fires before `onRetry?.()` guard — spinner stuck if `onRetry` prop absent [`components/TaskItem.tsx`]
+- [x] [Review][Patch] E2E bonus test missing `page.reload()` to confirm second task persists independently [`e2e/error-recovery.spec.ts`]
+- [x] [Review][Defer] Rapid double-click fires duplicate retry mutations — no in-flight guard in `handleRetry` [`components/TodoListClient.tsx`] — deferred, pre-existing pattern
+- [x] [Review][Defer] `switch (todo.failedMutation)` has no `default` case — silent no-op if field is `undefined` [`components/TodoListClient.tsx`] — deferred, requires future code path to trigger
