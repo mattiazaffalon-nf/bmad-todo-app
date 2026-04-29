@@ -1,4 +1,12 @@
 ---
+workflowType: 'prd'
+workflow: 'edit'
+stepsCompleted: ['step-e-01-discovery', 'step-e-02-review', 'step-e-03-edit']
+lastEdited: '2026-04-29'
+editHistory:
+  - date: '2026-04-29'
+    changes: 'Added Docker Compose local development requirement to NFR paragraph'
+---
 
 ## **Product Requirement Document (PRD) for the Todo App**
 
@@ -10,7 +18,7 @@ The frontend experience should be fast and responsive, with updates reflected in
 
 The backend will expose a small, well-defined API responsible for persisting and retrieving todo data. This API should support basic CRUD operations and ensure data consistency and durability across user sessions. While authentication and multi-user support are not required for the initial version, the architecture should not prevent these features from being added later if the product evolves.
 
-From a non-functional standpoint, the system should prioritize simplicity, performance, and maintainability. Interactions should feel instantaneous under normal conditions, and the overall solution should be easy to understand, deploy, and extend by future developers. Basic error handling is expected both client-side and server-side to gracefully handle failures without disrupting the user flow.
+From a non-functional standpoint, the system should prioritize simplicity, performance, and maintainability. Interactions should feel instantaneous under normal conditions, and the overall solution should be easy to understand, deploy, and extend by future developers. Basic error handling is expected both client-side and server-side to gracefully handle failures without disrupting the user flow. The application must be runnable locally via Docker Compose, with a single `docker compose up` command bringing up the full stack — application and database — ready for development and testing without any additional setup.
 
 The first version of the application intentionally excludes advanced features such as user accounts, collaboration, task prioritization, deadlines, or notifications. These capabilities may be considered in future iterations, but the initial delivery should remain focused on delivering a clean and reliable core experience.
 
