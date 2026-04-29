@@ -15,11 +15,11 @@ describe("UndoToast", () => {
     expect(region).toHaveAttribute("aria-live", "polite");
   });
 
-  it("is opacity-0 and pointer-events-none when not visible", () => {
-    render(<UndoToast visible={false} onUndo={vi.fn()} onDismiss={vi.fn()} />);
-    const region = screen.getByRole("status");
-    expect(region.className).toContain("opacity-0");
-    expect(region.className).toContain("pointer-events-none");
+  it("does not render when not visible from initial mount", () => {
+    const { container } = render(
+      <UndoToast visible={false} onUndo={vi.fn()} onDismiss={vi.fn()} />,
+    );
+    expect(container.firstChild).toBeNull();
   });
 
   it("calls onUndo when Undo button is clicked", () => {

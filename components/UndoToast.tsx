@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface UndoToastProps {
   visible: boolean;
@@ -9,6 +9,17 @@ interface UndoToastProps {
 }
 
 export function UndoToast({ visible, onUndo, onDismiss }: UndoToastProps) {
+  const [mounted, setMounted] = useState(visible);
+
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      return;
+    }
+    const t = setTimeout(() => setMounted(false), 200);
+    return () => clearTimeout(t);
+  }, [visible]);
+
   useEffect(() => {
     if (!visible) return;
     const handler = (e: KeyboardEvent) => {
@@ -24,6 +35,8 @@ export function UndoToast({ visible, onUndo, onDismiss }: UndoToastProps) {
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [visible, onDismiss]);
+
+  if (!mounted && !visible) return null;
 
   return (
     <div
