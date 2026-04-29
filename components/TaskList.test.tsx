@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { Todo } from "@/lib/validation";
 import { TaskList } from "./TaskList";
 
@@ -11,6 +11,27 @@ vi.mock("@/hooks/use-todos", () => ({
 vi.mock("@/hooks/use-toggle-todo", () => ({
   useToggleTodo: () => ({ mutate: vi.fn() }),
 }));
+
+vi.mock("react-swipeable", () => ({
+  useSwipeable: vi.fn(() => ({ ref: vi.fn() })),
+}));
+
+beforeEach(() => {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    configurable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+});
 
 import { useTodos } from "@/hooks/use-todos";
 

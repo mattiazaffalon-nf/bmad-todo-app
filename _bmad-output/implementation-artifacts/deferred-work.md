@@ -34,3 +34,8 @@
 - `components/TaskList.test.tsx` mocks `useToggleTodo` with an inline `() => ({ mutate: vi.fn() })` factory instead of a hoisted `mockMutate`. Test-reliability nitpick; future tests cannot observe the spy.
 - No integration test for clicking the checkbox through `<TaskList>` (only isolated `<TaskItem>` and hook-level coverage). Story 2.3's Playwright E2E will cover end-to-end.
 - No disabled-while-pending state on the checkbox button — optimistic-update pattern intentionally doesn't disable, but worth documenting if accessibility reviewers question rapid-click UX.
+
+## Deferred from: code review of 2-3-mobile-swipe-right-complete (2026-04-29)
+
+- E2E swipe test uses `page.evaluate` synthetic touch events instead of `page.touchscreen` (AC#7 specifies the latter). WebKit blocks `new TouchEvent(...)` ("Illegal constructor") and `page.touchscreen` only exposes `tap()`. The workaround is documented in the spec file; tests are green. Revisit if Playwright adds a native swipe API for WebKit.
+- Swipe-right on an already-completed task un-completes it (bidirectional toggle, same as tap). Story 3.x may add directional-intent semantics (swipe-right = complete only, swipe-left = delete). Product decision.

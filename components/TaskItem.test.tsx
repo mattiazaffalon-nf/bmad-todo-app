@@ -1,17 +1,42 @@
 // @vitest-environment jsdom
 import { render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { useSwipeable } from "react-swipeable";
 import type { OptimisticTodo } from "@/lib/validation";
 import { TaskItem } from "./TaskItem";
 
 const mockMutate = vi.fn();
 
 vi.mock("@/hooks/use-toggle-todo", () => ({
-  useToggleTodo: () => ({ mutate: mockMutate }),
+  useToggleTodo: () => ({ mutate: mockMutate, isPending: false }),
 }));
+
+vi.mock("react-swipeable", () => ({
+  useSwipeable: vi.fn(() => ({ ref: vi.fn() })),
+}));
+
+function mockMatchMedia(matches: boolean) {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    configurable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+}
 
 beforeEach(() => {
   mockMutate.mockReset();
+  vi.mocked(useSwipeable).mockClear();
+  vi.mocked(useSwipeable).mockReturnValue({ ref: vi.fn() } as unknown as ReturnType<typeof useSwipeable>);
+  mockMatchMedia(true); // default: mobile (swipe enabled)
 });
 
 const todo: OptimisticTodo = {
@@ -90,9 +115,43 @@ describe("TaskItem", () => {
     render(<ul><TaskItem todo={todo} /></ul>);
     const btn = screen.getByRole("button", { name: /mark task complete/i });
     expect(btn.tagName).toBe("BUTTON");
-    // fireEvent.keyDown on a <button> does not auto-fire click in JSDOM,
-    // but browsers do — the contract is satisfied by being a <button>.
     fireEvent.keyDown(btn, { key: "Enter" });
     fireEvent.keyDown(btn, { key: " " });
+  });
+
+  it("swipe-right past threshold below lg invokes mutate with toggled completed", () => {
+    mockMatchMedia(true);
+    render(<ul><TaskItem todo={todo} /></ul>);
+    const config = vi.mocked(useSwipeable).mock.calls[0][0];
+    expect(config.delta).toBe(80);
+    config.onSwiped?.({ deltaX: 200, dir: "Right" } as never);
+    expect(mockMutate).toHaveBeenCalledOnce();
+    expect(mockMutate).toHaveBeenCalledWith({ id: todo.id, completed: true });
+  });
+
+  it("swipe-right below threshold below lg does NOT invoke mutate", () => {
+    mockMatchMedia(true);
+    render(<ul><TaskItem todo={todo} /></ul>);
+    const config = vi.mocked(useSwipeable).mock.calls[0][0];
+    // deltaX 30 is below the 80px threshold; clientWidth in jsdom is 0 so the 40%-width branch is also below
+    config.onSwiped?.({ deltaX: 30, dir: "Right" } as never);
+    expect(mockMutate).not.toHaveBeenCalled();
+  });
+
+  it("swipe-left below lg does NOT invoke mutate (only swipe-right wired)", () => {
+    mockMatchMedia(true);
+    render(<ul><TaskItem todo={todo} /></ul>);
+    const config = vi.mocked(useSwipeable).mock.calls[0][0];
+    config.onSwiped?.({ deltaX: -200, dir: "Left" } as never);
+    expect(mockMutate).not.toHaveBeenCalled();
+  });
+
+  it("at lg+ viewport, swiping does not invoke mutate (handlers gated)", () => {
+    mockMatchMedia(false);
+    render(<ul><TaskItem todo={todo} /></ul>);
+    const config = vi.mocked(useSwipeable).mock.calls[0][0];
+    // Even if the host element invokes onSwiped (defensively), the gate short-circuits
+    config.onSwiped?.({ deltaX: 200, dir: "Right" } as never);
+    expect(mockMutate).not.toHaveBeenCalled();
   });
 });
