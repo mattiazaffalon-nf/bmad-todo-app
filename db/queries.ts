@@ -31,6 +31,14 @@ export async function updateTodo(
   return row ?? null;
 }
 
+export async function deleteTodo(id: string, userId: string | null): Promise<number> {
+  const result = await db
+    .delete(todos)
+    .where(and(eq(todos.id, id), userIdFilter(userId)))
+    .returning({ id: todos.id });
+  return result.length;
+}
+
 export async function createTodo(
   input: TodoCreateInput,
   userId: string | null,

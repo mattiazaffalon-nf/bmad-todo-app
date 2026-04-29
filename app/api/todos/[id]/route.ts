@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { updateTodo } from "@/db/queries";
+import { deleteTodo, updateTodo } from "@/db/queries";
 import { TodoUpdateSchema } from "@/lib/validation";
 import { internalError, notFound, validationFailed } from "../_lib/responses";
 
@@ -30,6 +30,20 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/todos/[id]">) 
     }
 
     return Response.json({ todo }, { status: 200 });
+  } catch (err) {
+    console.error(err);
+    return internalError();
+  }
+}
+
+export async function DELETE(_req: Request, ctx: RouteContext<"/api/todos/[id]">) {
+  try {
+    const { id } = await ctx.params;
+    if (!IdSchema.safeParse(id).success) {
+      return validationFailed("id route param must be a UUID");
+    }
+    await deleteTodo(id, null);
+    return new Response(null, { status: 204 });
   } catch (err) {
     console.error(err);
     return internalError();
