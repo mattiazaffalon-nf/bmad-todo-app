@@ -1,6 +1,6 @@
 # Story 4.5: Docker Compose local development environment
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -48,27 +48,27 @@ so that the app and its Postgres database start together without any manual envi
 
 ## Tasks / Subtasks
 
-- [ ] Add `output: 'standalone'` to `next.config.ts` (AC: #1, #6)
-  - [ ] Confirm Vercel build still passes (`pnpm build` locally or CI)
+- [x] Add `output: 'standalone'` to `next.config.ts` (AC: #1, #6)
+  - [x] Confirm Vercel build still passes (`pnpm build` locally or CI)
 
-- [ ] Create `.dockerignore` (AC: #2)
+- [x] Create `.dockerignore` (AC: #2)
 
-- [ ] Write `Dockerfile` multi-stage build (AC: #1, #5)
-  - [ ] Builder stage: Node 22 alpine, corepack enable, pnpm install, next build
-  - [ ] Runner stage: copy standalone output, set non-root user, expose 3000
-  - [ ] Entrypoint: `pnpm db:migrate && node .next/standalone/server.js`
-  - [ ] Ensure `pnpm` is available in runner (copy `node_modules/.bin/pnpm` or install via corepack in runner stage)
+- [x] Write `Dockerfile` multi-stage build (AC: #1, #5)
+  - [x] Builder stage: Node 22 alpine, corepack enable, pnpm install, next build
+  - [x] Runner stage: copy standalone output, set non-root user, expose 3000
+  - [x] Entrypoint: `pnpm db:migrate && node .next/standalone/server.js`
+  - [x] Ensure `pnpm` is available in runner (copy `node_modules/.bin/pnpm` or install via corepack in runner stage)
 
-- [ ] Write `compose.yml` (AC: #3, #4)
-  - [ ] `db` service with healthcheck
-  - [ ] `app` service with `depends_on: db: condition: service_healthy`
-  - [ ] Named volume `pgdata`
+- [x] Write `compose.yml` (AC: #3, #4)
+  - [x] `db` service with healthcheck
+  - [x] `app` service with `depends_on: db: condition: service_healthy`
+  - [x] Named volume `pgdata`
 
-- [ ] Manual smoke test (AC: #7)
-  - [ ] `docker compose up --build` from clean state
-  - [ ] Verify app at localhost:3000
-  - [ ] Verify task persistence across restart
-  - [ ] `docker compose down -v` clean teardown
+- [x] Manual smoke test (AC: #7) — verified with `podman compose` (Docker-compatible)
+  - [x] `docker compose up --build` from clean state
+  - [x] Verify app at localhost:3000
+  - [x] Verify task persistence across restart
+  - [x] `docker compose down -v` clean teardown
 
 ## Dev Notes
 
@@ -135,10 +135,44 @@ Do NOT create `docker-compose.yml` (legacy name) — use `compose.yml` (Compose 
 
 ### Agent Model Used
 
-<!-- filled by dev agent -->
+claude-opus-4-7 (1M context) via Claude Code, 2026-04-29.
 
 ### Debug Log References
 
+- `pnpm typecheck` ✅ green
+- `pnpm lint` ✅ green
+- `DATABASE_URL=postgresql://build:build@localhost:5432/build pnpm exec next build` ✅ green; standalone output produced at `.next/standalone/server.js`.
+
 ### Completion Notes List
 
+- **AC #1 (Dockerfile multi-stage):** Implemented. Builder runs `pnpm exec next build` (not `pnpm build`, which would invoke `drizzle-kit migrate`). Runner uses non-root `node` user, exposes 3000, sets `NEXT_TELEMETRY_DISABLED=1` in both stages.
+- **AC #1/#6 (`output: 'standalone'`):** Added to inner `nextConfig` in `next.config.ts:29`, before the `withSentryConfig` wrapper. Verified `next build` produces `.next/standalone/server.js`.
+- **AC #2 (`.dockerignore`):** Created with the seven excludes from the spec.
+- **AC #3 (`compose.yml`):** Two services (`db`, `app`), named `pgdata` volume, `pg_isready` healthcheck on `db`, `app` waits on `service_healthy`.
+- **AC #4 (Environment wiring):** `DATABASE_URL` and `DATABASE_URL_UNPOOLED` both set to `postgresql://todo:todo@db:5432/todo` in compose. No `.env` committed. `NEXT_PUBLIC_SENTRY_ENABLED` intentionally not set.
+- **AC #5 (Migration-then-start):** Runner CMD is `pnpm db:migrate && node server.js`. `pnpm@9.0.0` is provided in the runner stage via corepack (matches `package.json` `packageManager` field).
+- **AC #6 (`pnpm build` unchanged):** `package.json` `build` script untouched. The Dockerfile bypasses it and calls `pnpm exec next build` directly so the image build does not require a live DB.
+- **AC #7 (Manual verification):** ✅ Verified end-to-end with `podman compose` (drop-in Docker-compose-compatible). Steps run from a clean checkout (no `.env.local`):
+  - `podman compose up -d --build` → `db` Up (healthy), `app` Up, migrations applied at startup, Next.js Ready on `0.0.0.0:3000`.
+  - `curl http://localhost:3000` → HTTP 200; `curl http://localhost:3000/api/todos` → HTTP 200.
+  - Created a task via `POST /api/todos`, ran `podman compose down` then `podman compose up -d` (volume retained), and the task was still present after both containers were fully recreated.
+  - `podman compose down -v` removed both containers and the `bmad-todo-app-parallel_pgdata` volume cleanly.
+  - Note: `podman compose restart` (in-place restart) emits a transient dependency-ordering warning because podman-compose restarts services in parallel rather than respecting `depends_on: condition: service_healthy`. The full `down` + `up -d` cycle is the canonical persistence test and passes; the issue is a podman-compose ergonomics quirk, not a Dockerfile/compose.yml defect (Docker Compose v2 honors the dependency on restart).
+
+### Implementation notes / decisions
+
+- **Dummy `DATABASE_URL` at build time.** `db/client.ts:6` throws if `DATABASE_URL` is unset at module evaluation. Next.js evaluates the page module during page-data collection even when the page is `force-dynamic`, so the build needs *some* value. The Dockerfile builder sets `DATABASE_URL=postgresql://build:build@localhost:5432/build` — the value is never connected to (page is dynamic, no DB query runs at build) and is overridden at runtime by compose. Vercel's existing build path passes its own real `DATABASE_URL` from env vars, unchanged.
+- **COPY ordering in runner.** `.next/standalone` ships its own lean `package.json` (no `db:migrate` script) and a minimal `node_modules` (no `drizzle-kit`). The Dockerfile copies standalone *first*, then overlays the full `package.json`, `pnpm-lock.yaml`, `drizzle.config.ts`, `db/`, and full `node_modules` from the builder so `pnpm db:migrate` resolves correctly at startup. Trade-off: the runner image is larger than a minimal standalone image, which is acceptable for a local-dev tool.
+
 ### File List
+
+- `next.config.ts` — modified (added `output: 'standalone'`)
+- `.dockerignore` — new
+- `Dockerfile` — new
+- `compose.yml` — new
+- `_bmad-output/implementation-artifacts/4-5-docker-compose-local-dev.md` — modified (this file: ticked subtasks, Dev Agent Record, status → review)
+
+### Change Log
+
+- 2026-04-29 — Implemented Story 4.5: added Docker Compose local-dev environment (Dockerfile, compose.yml, .dockerignore, `output: 'standalone'`).
+- 2026-04-29 — Manual smoke test verified end-to-end with `podman compose` (Docker-compose-compatible): build, up, HTTP reachability, persistence across container recreate, clean `down -v`.
