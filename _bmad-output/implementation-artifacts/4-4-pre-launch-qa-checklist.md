@@ -1,6 +1,6 @@
 # Story 4.4: Pre-launch QA pass — desktop cross-browser, color-blindness, zoom, and keyboard verification
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
@@ -87,9 +87,11 @@ Per `_bmad-output/implementation-artifacts/deferred-work.md` (2026-04-29 scope d
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Set up the launch checklist scaffold (AC #6)**
-  - [ ] Create `docs/launch-checklist.md` with the table headers and one section per AC (Cross-browser, Color-blindness, Zoom, Keyboard, VoiceOver).
-  - [ ] Pre-populate the rows with the assertions from each AC so the QA pass becomes a checkbox exercise rather than free-form note-taking.
+- [x] **Task 1: Set up the launch checklist scaffold (AC #6)**
+  - [x] Create `docs/launch-checklist.md` with the table headers and one section per AC (Cross-browser, Color-blindness, Zoom, Keyboard, VoiceOver).
+  - [x] Pre-populate the rows with the assertions from each AC so the QA pass becomes a checkbox exercise rather than free-form note-taking.
+  - [x] Pre-flight grep for Cmd/Ctrl+Z (per Dev Notes guidance): NOT wired in `components/`, `hooks/`, `app/`. Pre-marked AC #4 row as ⚠️ N/A in the checklist.
+  - [x] Pre-flight grep for Delete-key shortcut: wired at `components/TaskItem.tsx:53`. AC #4 row noted accordingly.
 
 - [ ] **Task 2: Cross-browser desktop matrix (AC #1)**
   - [ ] Pull the latest `main` (or this story's branch) and run `pnpm dev` locally on `http://localhost:3000`.
@@ -227,6 +229,18 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+- Pre-flight grep `metaKey|ctrlKey|key.*[zZ]|KeyZ` over `components/`, `hooks/`, `app/` (excluding test files): zero results → Cmd/Ctrl+Z undo shortcut is NOT implemented. Captured in checklist as ⚠️ N/A.
+- Pre-flight grep `Delete|key.*[Dd]elete|onKeyDown` over same paths: hit at `components/TaskItem.tsx:53` (`if (e.key === "Delete" && !e.nativeEvent.isComposing) onDelete?.(todo.id)`). Confirmed Delete-key shortcut is wired.
+
 ### Completion Notes List
 
+- **Task 1 ✅ complete (AI-executable)**: `docs/launch-checklist.md` created with 70+ pre-populated assertion rows organized by AC. Table-driven format — tester fills in **Result** + **Notes** columns per row; AC #6 triage table and AC #7 quality-gate table are left at the bottom for post-QA work.
+- **Tasks 2–7 ⏸️ blocked on human tester**: these tasks require driving real browsers, simulating CVD via DevTools, using a physical keyboard, running VoiceOver, and triaging visual findings. None of these are AI-executable — proceeding further would mean fabricating QA results, which violates the workflow's "NEVER lie about completion" rule.
+- **Pre-flight findings handed to tester**: Cmd/Ctrl+Z undo NOT wired (mark AC #4 row ⚠️ N/A and add deferred-work entry); Delete-key shortcut IS wired (`TaskItem.tsx:53`).
+- **At-risk contrast pair to watch under CVD**: `--foreground-muted #71717a` on `--surface #ffffff` is exactly 4.5:1 (minimum WCAG AA) — surfaced during Story 4.3 review. Tester should pay attention to this pair under all three CVD simulations.
+- **Story status remains `in-progress`**: it is NOT yet ready for review. Status flips to `review` only after the human tester has filled in the checklist, triaged findings, and run the AC #7 quality gates.
+
 ### File List
+
+- `docs/launch-checklist.md` — NEW (primary deliverable; tester to fill in)
+- `_bmad-output/implementation-artifacts/4-4-pre-launch-qa-checklist.md` — MODIFIED (story file: status, Task 1 checkboxes, Dev Agent Record)
