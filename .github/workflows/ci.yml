@@ -31,6 +31,8 @@ jobs:
 
       - name: Unit tests
         run: pnpm test
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium
