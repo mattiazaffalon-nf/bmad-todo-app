@@ -1,6 +1,6 @@
 # Story 3.3: Add desktop hover-reveal trash icon and mobile swipe-left gesture (Journey 4 E2E)
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -63,61 +63,61 @@ So that deletion is reachable without modal ceremony in either input modality.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Add `tabIndex={-1}` and keyboard Delete to `<li>` in `TaskItem` (AC: #3)**
-  - [ ] Add `tabIndex={-1}` to the `<li>` element so Story 3.2's `queueMicrotask` focus works
-  - [ ] Add `onKeyDown` handler: `if (e.key === "Delete" && !e.isComposing) onDelete?.(todo.id)`
-  - [ ] Destructure `onDelete` from props (currently `{ todo }` only)
-  - [ ] `pnpm typecheck` passes
+- [x] **Task 1: Add `tabIndex={-1}` and keyboard Delete to `<li>` in `TaskItem` (AC: #3)**
+  - [x] Add `tabIndex={-1}` to the `<li>` element so Story 3.2's `queueMicrotask` focus works
+  - [x] Add `onKeyDown` handler: `if (e.key === "Delete" && !e.isComposing) onDelete?.(todo.id)`
+  - [x] Destructure `onDelete` from props (currently `{ todo }` only)
+  - [x] `pnpm typecheck` passes
 
-- [ ] **Task 2: Add desktop hover-reveal trash button (AC: #1, #5)**
-  - [ ] Replace the placeholder `<div className="w-[44px] flex-shrink-0" />` with an actual `<button>`
-  - [ ] Import `Trash2` from `lucide-react`
-  - [ ] Button classes: `w-[44px] h-[44px] flex items-center justify-center flex-shrink-0 opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity duration-200 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`
-  - [ ] Add `group` class to the outer `<li>` element
-  - [ ] `aria-label="Delete task"`, `type="button"`, `onClick={() => onDelete?.(todo.id)}`
-  - [ ] `pnpm typecheck` and `pnpm lint` pass
+- [x] **Task 2: Add desktop hover-reveal trash button (AC: #1, #5)**
+  - [x] Replace the placeholder `<div className="w-[44px] flex-shrink-0" />` with an actual `<button>`
+  - [x] Import `Trash2` from `lucide-react`
+  - [x] Button classes: `w-[44px] h-[44px] flex items-center justify-center flex-shrink-0 opacity-0 [@media(hover:hover)]:group-hover:opacity-100 transition-opacity duration-200 motion-reduce:transition-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`
+  - [x] Add `group` class to the outer `<li>` element
+  - [x] `aria-label="Delete task"`, `type="button"`, `onClick={() => onDelete?.(todo.id)}`
+  - [x] `pnpm typecheck` and `pnpm lint` pass
 
-- [ ] **Task 3: Add muted-amber trash panel behind row for swipe-left reveal (AC: #2)**
-  - [ ] Add absolute-positioned div inside `<li>` (before the translating content div): `<div className="absolute inset-y-0 right-0 flex items-center px-6"><Trash2 size={20} className="text-error-foreground" /></div>`
-  - [ ] This panel is always visible behind the sliding content; it shows naturally as the content slides left
-  - [ ] `pnpm typecheck` passes
+- [x] **Task 3: Add muted-amber trash panel behind row for swipe-left reveal (AC: #2)**
+  - [x] Add absolute-positioned div inside `<li>` (before the translating content div): `<div className="absolute inset-y-0 right-0 flex items-center px-6"><Trash2 size={20} className="text-error-foreground" /></div>`
+  - [x] This panel is always visible behind the sliding content; it shows naturally as the content slides left
+  - [x] `pnpm typecheck` passes
 
-- [ ] **Task 4: Extend swipeable handlers for swipe-left delete (AC: #2, #5)**
-  - [ ] Add `reduceMotion` using `useMediaQuery("(prefers-reduced-motion: reduce)")`
-  - [ ] In `onSwiping`: handle `e.deltaX < 0` symmetrically to right swipe — `setIsDragging(true)`, `setDragX(Math.max(e.deltaX, -(rowRef.current?.clientWidth ?? 0)))`
-  - [ ] In `onSwiped`: handle `dir === "Left"` (enabled only when `enableSwipe`): check `Math.abs(e.deltaX) >= SWIPE_PX_THRESHOLD`; if true → trigger exit animation (or immediate delete for `reduceMotion`); if false → snap back (`setDragX(0)`)
-  - [ ] Exit animation: `setIsDragging(false)`, `setDragX(-(rowRef.current?.clientWidth ?? 300))`, then `setTimeout(() => onDelete?.(todo.id), reduceMotion ? 0 : 300)`
-  - [ ] Transition class: update the existing transition to use `duration-300 ease-in` when exiting left; keep `duration-200 ease-in-out` for normal snap-back. Or use a single class: the existing `transition-transform duration-200 ease-in-out motion-reduce:transition-none` can stay for snap-back; the `isDragging ? "transition-none" : "transition-transform duration-300 ease-in motion-reduce:transition-none"` can be used when `dragX < 0` and not dragging (exit)
-  - [ ] `pnpm typecheck` passes
+- [x] **Task 4: Extend swipeable handlers for swipe-left delete (AC: #2, #5)**
+  - [x] Add `reduceMotion` using `useMediaQuery("(prefers-reduced-motion: reduce)")`
+  - [x] In `onSwiping`: handle `e.deltaX < 0` symmetrically to right swipe — `setIsDragging(true)`, `setDragX(Math.max(e.deltaX, -(rowRef.current?.clientWidth ?? 0)))`
+  - [x] In `onSwiped`: handle `dir === "Left"` (enabled only when `enableSwipe`): check `Math.abs(e.deltaX) >= SWIPE_PX_THRESHOLD`; if true → trigger exit animation (or immediate delete for `reduceMotion`); if false → snap back (`setDragX(0)`)
+  - [x] Exit animation: `setIsDragging(false)`, `setDragX(-(rowRef.current?.clientWidth ?? 300))`, then `setTimeout(() => onDelete?.(todo.id), reduceMotion ? 0 : 300)`
+  - [x] Transition class: update the existing transition to use `duration-300 ease-in` when exiting left; keep `duration-200 ease-in-out` for normal snap-back. Or use a single class: the existing `transition-transform duration-200 ease-in-out motion-reduce:transition-none` can stay for snap-back; the `isDragging ? "transition-none" : "transition-transform duration-300 ease-in motion-reduce:transition-none"` can be used when `dragX < 0` and not dragging (exit)
+  - [x] `pnpm typecheck` passes
 
-- [ ] **Task 5: Write Vitest tests for new behaviors (AC: #6)**
-  - [ ] In `components/TaskItem.test.tsx`, add `mockDeleteFn = vi.fn()` and pass `onDelete={mockDeleteFn}` in all existing tests (update renders to avoid test drift)
-  - [ ] Add: trash button renders with `aria-label="Delete task"`
-  - [ ] Add: clicking trash button calls `onDelete` with todo.id
-  - [ ] Add: keyboard Delete on the `<li>` row calls `onDelete`
-  - [ ] Add: swipe-left past threshold calls `onDelete` (need `vi.useFakeTimers()` for the 300ms delay)
-  - [ ] Add: swipe-left below threshold does NOT call `onDelete`
-  - [ ] Add: swipe-left at lg+ viewport does NOT call `onDelete`
-  - [ ] `pnpm test` passes (all 114 existing + new)
+- [x] **Task 5: Write Vitest tests for new behaviors (AC: #6)**
+  - [x] In `components/TaskItem.test.tsx`, add `mockDeleteFn = vi.fn()` and pass `onDelete={mockDeleteFn}` in all existing tests (update renders to avoid test drift)
+  - [x] Add: trash button renders with `aria-label="Delete task"`
+  - [x] Add: clicking trash button calls `onDelete` with todo.id
+  - [x] Add: keyboard Delete on the `<li>` row calls `onDelete`
+  - [x] Add: swipe-left past threshold calls `onDelete` (need `vi.useFakeTimers()` for the 300ms delay)
+  - [x] Add: swipe-left below threshold does NOT call `onDelete`
+  - [x] Add: swipe-left at lg+ viewport does NOT call `onDelete`
+  - [x] `pnpm test` passes (all 114 existing + new)
 
-- [ ] **Task 6: Write E2E `e2e/delete-undo.spec.ts` (AC: #7)**
-  - [ ] Desktop Journey 4: seed task → `page.goto("/")` → hover row → click trash button (`getByRole("button", { name: /delete task/i })`) → assert UndoToast visible → click "Undo" → assert task visible again; intercept DELETE request and assert it was NOT made
-  - [ ] Mobile Journey 4 (with `test.use({ ...devices["iPhone 14"] })`): seed task → goto → swipe-left gesture → assert UndoToast → `await page.clock.fastForward(6000)` → reload → assert task gone
-  - [ ] Delete-confirm journey: seed → delete (desktop) → `page.clock.fastForward(6000)` → intercept DELETE and verify it fired → reload → assert task gone
-  - [ ] Use `cleanupTodos()` in `beforeEach`
-  - [ ] Use stable UUIDs for seeded tasks (different per test to avoid cross-contamination)
-  - [ ] `pnpm test` (unit only) still green
+- [x] **Task 6: Write E2E `e2e/delete-undo.spec.ts` (AC: #7)**
+  - [x] Desktop Journey 4: seed task → `page.goto("/")` → hover row → click trash button (`getByRole("button", { name: /delete task/i })`) → assert UndoToast visible → click "Undo" → assert task visible again; intercept DELETE request and assert it was NOT made
+  - [x] Mobile Journey 4 (with `test.use({ ...devices["iPhone 14"] })`): seed task → goto → swipe-left gesture → assert UndoToast → `await page.clock.fastForward(6000)` → reload → assert task gone
+  - [x] Delete-confirm journey: seed → delete (desktop) → `page.clock.fastForward(6000)` → intercept DELETE and verify it fired → reload → assert task gone
+  - [x] Use `cleanupTodos()` in `beforeEach`
+  - [x] Use stable UUIDs for seeded tasks (different per test to avoid cross-contamination)
+  - [x] `pnpm test` (unit only) still green
 
-- [ ] **Task 7: Extend `e2e/a11y.spec.ts` with delete-state scans (AC: #7)**
-  - [ ] Add test: seed task → delete → while UndoToast visible → axe-core scan → zero violations
-  - [ ] Add test: seed task → delete → post-deletion focus state → axe-core scan → zero violations
-  - [ ] `pnpm lint` clean
+- [x] **Task 7: Extend `e2e/a11y.spec.ts` with delete-state scans (AC: #7)**
+  - [x] Add test: seed task → delete → while UndoToast visible → axe-core scan → zero violations
+  - [x] Add test: seed task → delete → post-deletion focus state → axe-core scan → zero violations
+  - [x] `pnpm lint` clean
 
-- [ ] **Task 8: Verify all gates (AC: #8)**
-  - [ ] `pnpm lint` — clean
-  - [ ] `pnpm typecheck` — clean
-  - [ ] `pnpm test` — all prior tests green + new Vitest tests
-  - [ ] `pnpm build` — clean
+- [x] **Task 8: Verify all gates (AC: #8)**
+  - [x] `pnpm lint` — clean
+  - [x] `pnpm typecheck` — clean
+  - [x] `pnpm test` — all prior tests green + new Vitest tests
+  - [x] `pnpm build` — clean
 
 ## Dev Notes
 
@@ -390,4 +390,13 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
+- All 8 tasks complete. 122 Vitest tests pass. Build clean.
+- `e.nativeEvent.isComposing` used instead of `e.isComposing` on the React synthetic event (TypeScript requires accessing it via nativeEvent).
+- Swipe-left E2E uses synchronous touch dispatch (no await inside loop) so fake clock doesn't block gesture.
+
 ### File List
+
+- `components/TaskItem.tsx` — MODIFIED
+- `components/TaskItem.test.tsx` — MODIFIED
+- `e2e/delete-undo.spec.ts` — NEW
+- `e2e/a11y.spec.ts` — MODIFIED

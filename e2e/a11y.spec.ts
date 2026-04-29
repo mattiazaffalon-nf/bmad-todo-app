@@ -39,3 +39,45 @@ test("a11y: completed-task state has zero axe violations", async ({ page }) => {
 
   expect(results.violations).toEqual([]);
 });
+
+test("a11y: UndoToast visible state has zero axe violations", async ({ page }) => {
+  const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  await seedTodo(id, "axe delete toast target");
+  await page.goto("/");
+
+  const row = page.getByRole("listitem").filter({ hasText: "axe delete toast target" });
+  await expect(row).toBeVisible();
+
+  await row.getByRole("button", { name: /delete task/i }).click({ force: true });
+  await expect(page.getByText("Task deleted")).toBeVisible();
+
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+
+  expect(results.violations).toEqual([]);
+});
+
+test("a11y: post-deletion focus state has zero axe violations", async ({ page }) => {
+  await page.clock.install();
+
+  const id = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  await seedTodo(id, "axe post-delete target");
+  await page.goto("/");
+
+  const row = page.getByRole("listitem").filter({ hasText: "axe post-delete target" });
+  await expect(row).toBeVisible();
+
+  await row.getByRole("button", { name: /delete task/i }).click({ force: true });
+  await expect(page.getByText("Task deleted")).toBeVisible();
+
+  // Advance past the undo window so the toast clears
+  await page.clock.fastForward(6000);
+  await expect(page.getByText("Task deleted")).not.toBeVisible({ timeout: 2000 });
+
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+
+  expect(results.violations).toEqual([]);
+});
