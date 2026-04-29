@@ -34,4 +34,15 @@ export const apiClient = {
     const body = z.object({ todo: TodoApiSchema }).parse(await res.json());
     return body.todo;
   },
+
+  async toggleTodo(id: string, completed: boolean): Promise<Todo> {
+    const res = await fetch(`/api/todos/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ completed }),
+    });
+    if (!res.ok) throw new ApiError(res.status, `HTTP ${res.status}`);
+    const body = z.object({ todo: TodoApiSchema }).parse(await res.json());
+    return body.todo;
+  },
 };

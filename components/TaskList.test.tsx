@@ -8,6 +8,10 @@ vi.mock("@/hooks/use-todos", () => ({
   useTodos: vi.fn(),
 }));
 
+vi.mock("@/hooks/use-toggle-todo", () => ({
+  useToggleTodo: () => ({ mutate: vi.fn() }),
+}));
+
 import { useTodos } from "@/hooks/use-todos";
 
 const makeTodo = (id: string, description: string): Todo => ({
