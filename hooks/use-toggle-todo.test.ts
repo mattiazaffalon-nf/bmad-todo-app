@@ -56,7 +56,7 @@ describe("useToggleTodo", () => {
     });
   });
 
-  it("onError restores previous cache snapshot", async () => {
+  it("onError marks the entry syncStatus:'failed' keeping intended completed value (task stays in list)", async () => {
     const existing: OptimisticTodo = { ...SERVER_TODO, completed: false, syncStatus: "idle" };
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     queryClient.setQueryData<OptimisticTodo[]>(["todos"], [existing]);
@@ -86,7 +86,10 @@ describe("useToggleTodo", () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
 
     const data = queryClient.getQueryData<OptimisticTodo[]>(["todos"]);
-    expect(data).toEqual([existing]);
+    // Entry stays in the list (not rolled back) with failed status and intended completed value
+    expect(data).toHaveLength(1);
+    expect(data?.[0]?.syncStatus).toBe("failed");
+    expect(data?.[0]?.completed).toBe(true); // intended value preserved
   });
 
   it("onSuccess replaces cache entry with server response and syncStatus idle", async () => {

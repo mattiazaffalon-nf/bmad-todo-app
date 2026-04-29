@@ -1,5 +1,17 @@
 # Deferred Work
 
+## Scope decision (2026-04-29): Desktop-only
+
+This is a hobby project. Mobile browser support is explicitly out of scope for v1.
+
+**Impact on Epic 4 stories:**
+- Drop all mobile-specific ACs (swipe gestures, touch hit-target sizing beyond what's already in place, iOS/Android-specific workarounds)
+- Drop real-device testing from Story 4.4 QA pass — desktop Chrome/Firefox/Safari only
+- Drop mobile sub-journeys from Playwright E2E specs
+- Keep `prefers-reduced-motion`, keyboard a11y, and color-blindness simulation — these are desktop-relevant
+
+Story 3.3 was implemented with the mobile swipe-left affordance already included; it is intentionally left as-is (harmless on desktop, useful if mobile is revisited).
+
 ## Deferred from: code review of 1-3-api-todos-routes-validation (2026-04-28)
 
 - No request body size limit or stream timeout on `req.json()` in `app/api/todos/route.ts` — a slow/large payload could cause the handler to hang or OOM. Mitigated by reverse proxy in production (Vercel). Revisit if the endpoint is exposed to untrusted clients without a gateway.
