@@ -8,6 +8,13 @@
 
 - `onError` rollback in `useCreateTodo` writes back the snapshot taken in its own `onMutate` — if a second mutation begins between the first's `onMutate` and `onError`, the rollback will clobber the second's optimistic entry. Requires per-id removal pattern instead of blanket snapshot restore.
 - Server's id-collision path returns the existing row (via `onConflictDoNothing`) — `useCreateTodo.onSuccess` then replaces the optimistic row with the existing description, silently overwriting the user's typed text. Vanishingly improbable with `crypto.randomUUID`, but a real contract gap.
+
+## Deferred from: code review of 2-1-api-todos-id-patch-handler (2026-04-29)
+
+- `validationFailed` sends raw Zod `.message` (JSON-serialised array of all issues) — not human-readable. Pre-existing pattern across all routes; clean up when adding an API error format standard.
+- `_lib/responses.ts` scoped under `app/api/todos/` — not reusable by future non-todos routes without moving or duplicating. Revisit when a second top-level resource is added.
+- 404 returned (not 403) when `userId` mismatches after auth is wired in — intentional per spec to avoid leaking resource existence; document the decision in the auth epic.
+- PATCH body requires `completed` (not optional) — full partial-update semantics unsupported. Revisit when description editing is added (likely a separate `updateTodoDescription` helper).
 - `value.slice(0, 280)` in `TaskInput` operates on UTF-16 code units; pasting 280+ chars of emoji/CJK can cut mid-surrogate and yield a malformed string. Low impact for v1 English/Italian users.
 - Fixed-position bottom input on iOS Safari may sit behind the virtual keyboard. Needs `visualViewport` listener or `interactive-widget=resizes-content` viewport meta to verify behavior across iOS versions.
 - `aria-describedby="empty-state-hint"` on the input dangles when the list is non-empty (EmptyState is unmounted). Screen readers ignore gracefully but jsx-a11y / axe-core will flag it.

@@ -1,14 +1,6 @@
 import { createTodo, getTodoById, getTodos } from "@/db/queries";
 import { TodoCreateSchema } from "@/lib/validation";
-
-const validationFailed = (message: string) =>
-  Response.json({ code: "validation_failed", message }, { status: 400 });
-
-const internalError = () =>
-  Response.json(
-    { code: "internal_error", message: "Something went wrong" },
-    { status: 500 },
-  );
+import { internalError, validationFailed } from "./_lib/responses";
 
 export async function GET() {
   try {
