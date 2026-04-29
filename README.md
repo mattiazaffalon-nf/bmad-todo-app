@@ -135,6 +135,17 @@ See `.env.example`. Values are configured per-environment in Vercel:
 
 See [`AGENTS.md`](./AGENTS.md) for naming, the import-graph rules, the no-modals UX policy, and the design-token contract. Authoritative specs live in `_bmad-output/planning-artifacts/` (PRD, architecture, UX, epics, dependency graph).
 
+## Documentation
+
+Long-form reports and checklists live under [`docs/`](./docs/):
+
+| Document | Purpose |
+| --- | --- |
+| [`docs/launch-checklist.md`](./docs/launch-checklist.md) | Pre-launch manual QA pass — cross-browser, color-blindness, 200 % zoom, keyboard-only journey, VoiceOver spot-check (Story 4.4). |
+| [`docs/qa-report-2026-04-29.md`](./docs/qa-report-2026-04-29.md) | Dated QA snapshot — Vitest results, coverage, performance trace (Core Web Vitals), Lighthouse audits, axe-core WCAG AA scans, manual security review. |
+| [`docs/success-criteria-report.md`](./docs/success-criteria-report.md) | Maps each course success criterion to the actual repo state with file/PR evidence and run-it-yourself commands. |
+| [`docs/ai-collaboration-retrospective.md`](./docs/ai-collaboration-retrospective.md) | Reflection on AI usage — agent tasks, MCP servers, test generation, debugging cases, limitations encountered. |
+
 ## BMad workflow used on this project
 
 This is a reconstruction of the BMad skills invoked, in order, mapped to the artifacts and commits each one produced. Useful as a reference for repeating the workflow on a new project.
