@@ -27,6 +27,7 @@ export function TaskInput() {
     <div className="fixed bottom-0 left-0 right-0 z-10 bg-surface border-t border-border-subtle px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] lg:static lg:border-none lg:bg-transparent lg:px-0 lg:py-0 lg:pb-0 w-full max-w-[640px] lg:mx-auto">
       <div className="relative flex items-center gap-2">
         <input
+          id="task-input"
           autoFocus
           aria-label="New task"
           aria-describedby="empty-state-hint"

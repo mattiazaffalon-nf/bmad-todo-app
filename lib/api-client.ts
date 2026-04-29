@@ -45,4 +45,15 @@ export const apiClient = {
     const body = z.object({ todo: TodoApiSchema }).parse(await res.json());
     return body.todo;
   },
+
+  async deleteTodo(id: string): Promise<void> {
+    let res: Response;
+    try {
+      res = await fetch(`/api/todos/${id}`, { method: "DELETE" });
+    } catch {
+      throw new ApiError(0, "network");
+    }
+    if (res.status === 204 || res.status === 404) return;
+    throw new ApiError(res.status, `HTTP ${res.status}`);
+  },
 };
