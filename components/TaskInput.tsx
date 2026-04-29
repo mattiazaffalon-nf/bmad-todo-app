@@ -30,7 +30,6 @@ export function TaskInput() {
           id="task-input"
           autoFocus
           aria-label="New task"
-          aria-describedby="empty-state-hint"
           className="flex-1 text-base text-foreground bg-transparent outline-none placeholder:text-foreground-muted"
           placeholder="Add a task…"
           value={value}

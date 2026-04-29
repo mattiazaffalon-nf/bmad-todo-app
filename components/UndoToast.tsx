@@ -34,9 +34,16 @@ export function UndoToast({ visible, onUndo, onDismiss }: UndoToastProps) {
         "flex items-center justify-between gap-4",
         "min-w-[240px] max-w-[320px] h-11 px-4 rounded-full",
         "bg-surface border border-border-subtle",
-        "transition-opacity duration-200 motion-reduce:transition-none",
-        visible ? "opacity-100 ease-out" : "opacity-0 ease-in pointer-events-none",
+        "motion-reduce:transition-none",
+        visible ? "" : "pointer-events-none",
       ].join(" ")}
+      style={{
+        visibility: visible ? "visible" : "hidden",
+        opacity: visible ? 1 : 0,
+        transition: visible
+          ? "none"
+          : "opacity 200ms ease-in, visibility 0s 200ms",
+      }}
     >
       <span className="text-sm text-foreground-muted">Task deleted</span>
       <button

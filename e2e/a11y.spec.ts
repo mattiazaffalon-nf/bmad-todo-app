@@ -17,6 +17,21 @@ test("a11y: empty state has zero axe violations", async ({ page }) => {
   expect(results.violations).toEqual([]);
 });
 
+test("a11y: populated list has zero axe violations", async ({ page }) => {
+  const id1 = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+  const id2 = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+  await seedTodo(id1, "first task");
+  await seedTodo(id2, "second task");
+  await page.goto("/");
+  await expect(page.getByRole("list")).toBeVisible();
+
+  const results = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+    .analyze();
+
+  expect(results.violations).toEqual([]);
+});
+
 test("a11y: completed-task state has zero axe violations", async ({ page }) => {
   const id = "66666666-6666-4666-8666-666666666666";
   await seedTodo(id, "axe scan target");
