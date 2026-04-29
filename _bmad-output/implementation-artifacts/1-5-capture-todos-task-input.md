@@ -508,8 +508,30 @@ package.json                — add test:e2e script, @playwright/test devDep
 
 ### File List
 
+### Review Findings
+
+- [x] [Review][Patch] IME composition Enter submits incomplete CJK text [components/TaskInput.tsx:18-22] — guard with `e.nativeEvent.isComposing`
+- [x] [Review][Patch] Playwright runs tests with default parallelism, races TRUNCATE [playwright.config.ts] — set `workers: 1`
+- [x] [Review][Patch] `cleanupTodos` will TRUNCATE any DB pointed to by `DATABASE_URL` with no guard [e2e/fixtures/test-db.ts:5-10] — add a safety check (refuse if URL doesn't look like a dev/test branch)
+- [x] [Review][Patch] `cleanupTodos` connection leak on error [e2e/fixtures/test-db.ts:5-10] — wrap in `try/finally` to always call `client.end()`
+- [x] [Review][Patch] `seedTodo` swallows non-2xx HTTP responses [e2e/fixtures/test-db.ts:12-18] — throw if `!res.ok`
+- [x] [Review][Patch] Journey 2 lacks `waitForResponse` before list-order assertion [e2e/capture.spec.ts:33-38] — wait for POST before reading items
+- [x] [Review][Patch] Send `<button>` has no `type` attribute [components/TaskInput.tsx:39-45] — add `type="button"` to prevent accidental form submission if ever wrapped in `<form>`
+- [x] [Review][Patch] Send button focusable via Tab when hidden [components/TaskInput.tsx:42] — add `tabIndex={-1}` when `!hasContent`
+- [x] [Review][Patch] `useCreateTodo` onError test does not assert optimistic insert occurred before rollback [hooks/use-create-todo.test.ts:56-74] — assert intermediate cache state contains the optimistic row before awaiting `isError`
+
+- [x] [Review][Defer] `onError` rollback can clobber concurrent in-flight optimistic entries [hooks/use-create-todo.ts:25-29] — deferred, requires concurrent-mutation design decision; v1 UX rarely produces concurrent submissions
+- [x] [Review][Defer] Server may return existing row on id collision; optimistic description silently overwritten [hooks/use-create-todo.ts:30-34] — deferred, vanishingly improbable with `crypto.randomUUID`
+- [x] [Review][Defer] `value.slice(0, 280)` cuts inside Unicode surrogate pair / grapheme cluster [components/TaskInput.tsx:36] — deferred, low impact for v1
+- [x] [Review][Defer] iOS Safari fixed-bottom input may be hidden behind virtual keyboard [components/TaskInput.tsx:27] — deferred, requires `visualViewport` listener
+- [x] [Review][Defer] `aria-describedby="empty-state-hint"` dangles when EmptyState is unmounted [components/TaskInput.tsx:32] — deferred, screen readers gracefully ignore
+- [x] [Review][Defer] `crypto.randomUUID()` undefined on insecure contexts (HTTP / older Safari) [components/TaskInput.tsx:14] — deferred, production is HTTPS on Vercel
+- [x] [Review][Defer] `pb-[calc(0.75rem+env(safe-area-inset-bottom))]` hardcodes literal instead of `var(--space-3)` token [components/TaskInput.tsx:27] — deferred, also spec is internally inconsistent (AC says `--space-4`, Task says `--space-3`)
+- [x] [Review][Defer] `apiClient.createTodo` 4xx/5xx error path is not unit-tested [hooks/use-create-todo.test.ts] — deferred, test gap not bug
+
 ## Change Log
 
 | Date       | Change                        |
 | ---------- | ----------------------------- |
 | 2026-04-29 | Story 1.5 spec created        |
+| 2026-04-29 | Code review — 9 patches, 8 deferrals |

@@ -16,7 +16,7 @@ export function TaskInput() {
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !e.nativeEvent.isComposing) {
       handleSubmit();
     }
   }
@@ -37,8 +37,10 @@ export function TaskInput() {
           onKeyDown={handleKeyDown}
         />
         <button
+          type="button"
           aria-label="Add task"
           onClick={handleSubmit}
+          tabIndex={hasContent ? 0 : -1}
           className={`w-[44px] h-[44px] flex items-center justify-center text-accent motion-safe:transition-opacity duration-150 ${hasContent ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         >
           <Send size={20} />

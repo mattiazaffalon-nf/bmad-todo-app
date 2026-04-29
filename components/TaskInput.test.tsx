@@ -65,4 +65,12 @@ describe("TaskInput", () => {
     fireEvent.keyDown(input, { key: "Enter" });
     expect(mockMutate).not.toHaveBeenCalled();
   });
+
+  it("pressing Enter during IME composition does NOT call mutate", () => {
+    render(<TaskInput />);
+    const input = screen.getByRole("textbox", { name: /new task/i });
+    fireEvent.change(input, { target: { value: "konn" } });
+    fireEvent.keyDown(input, { key: "Enter", isComposing: true });
+    expect(mockMutate).not.toHaveBeenCalled();
+  });
 });

@@ -57,7 +57,11 @@ describe("useCreateTodo", () => {
     const existing: OptimisticTodo = { ...SERVER_TODO, id: "existing", description: "existing" };
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     queryClient.setQueryData<OptimisticTodo[]>(["todos"], [existing]);
-    vi.mocked(apiClient.createTodo).mockRejectedValue(new Error("fail"));
+
+    let rejectMutation!: (err: Error) => void;
+    vi.mocked(apiClient.createTodo).mockImplementation(
+      () => new Promise((_resolve, reject) => { rejectMutation = reject; }),
+    );
 
     const { result } = renderHook(() => useCreateTodo(), {
       wrapper: createWrapper(queryClient),
@@ -67,7 +71,17 @@ describe("useCreateTodo", () => {
       result.current.mutate({ id: TEST_ID, description: "test" });
     });
 
-    await waitFor(() => result.current.isError);
+    await waitFor(() => {
+      const data = queryClient.getQueryData<OptimisticTodo[]>(["todos"]);
+      expect(data?.[0]?.syncStatus).toBe("pending");
+      expect(data).toHaveLength(2);
+    });
+
+    act(() => {
+      rejectMutation(new Error("fail"));
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
 
     const data = queryClient.getQueryData<OptimisticTodo[]>(["todos"]);
     expect(data).toEqual([existing]);

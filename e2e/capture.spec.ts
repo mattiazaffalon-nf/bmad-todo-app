@@ -31,9 +31,13 @@ test("Journey 2: new task prepends above existing seed todo", async ({ page }) =
 
   const input = page.getByRole("textbox", { name: /new task/i });
   await input.fill("new task");
+
+  const responsePromise = page.waitForResponse((r) => r.url().includes("/api/todos") && r.request().method() === "POST");
   await input.press("Enter");
+  await responsePromise;
 
   const items = page.getByRole("listitem");
+  await expect(items).toHaveCount(2);
   await expect(items.first()).toContainText("new task");
   await expect(items.nth(1)).toContainText("existing task");
 });

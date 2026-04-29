@@ -4,6 +4,7 @@ config({ path: ".env.local" });
 
 export default defineConfig({
   testDir: "./e2e",
+  workers: 1,
   use: { baseURL: process.env.BASE_URL ?? "http://localhost:3000" },
   webServer: process.env.BASE_URL
     ? undefined
