@@ -5,7 +5,10 @@ import { internalError, notFound, validationFailed } from "@/lib/api-errors";
 
 const IdSchema = z.string().uuid();
 
-export async function PATCH(req: Request, ctx: RouteContext<"/api/todos/[id]">) {
+export async function PATCH(
+  req: Request,
+  ctx: { params: Promise<{ id: string }> },
+) {
   try {
     const { id } = await ctx.params;
     if (!IdSchema.safeParse(id).success) {
@@ -36,7 +39,10 @@ export async function PATCH(req: Request, ctx: RouteContext<"/api/todos/[id]">) 
   }
 }
 
-export async function DELETE(_req: Request, ctx: RouteContext<"/api/todos/[id]">) {
+export async function DELETE(
+  _req: Request,
+  ctx: { params: Promise<{ id: string }> },
+) {
   try {
     const { id } = await ctx.params;
     if (!IdSchema.safeParse(id).success) {
