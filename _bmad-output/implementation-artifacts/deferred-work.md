@@ -55,3 +55,9 @@
 - No `AbortController` / fetch timeout on any api-client method (only `deleteTodo` is touched in this story; the gap is repo-wide). A hung DELETE blocks indefinitely with no UX. Track as api-client hardening epic.
 - Tab-close mid-DELETE drops the request — known v1 limitation per `architecture.md` line 1108. `navigator.sendBeacon` or `fetch({ keepalive: true })` is the eventual fix.
 - Test hardening for the deferred-delete pattern: (a) add a test that unmounts the hook mid-window and asserts no timer fires; (b) cross-fade test should assert cache integrity between the two deletions, not just DELETE call counts; (c) `UndoToast` Escape test should originate from a focused `<input>` to verify the input-guard once it lands.
+
+## Deferred from: code review of 3-3-delete-affordances-e2e (2026-04-29)
+
+- SSR/hydration mismatch: `useMediaQuery("(prefers-reduced-motion: reduce)")` returns `false` on the server; users with the reduced-motion preference may briefly see the 300ms swipe-left exit animation between first paint and hydration. Pre-existing pattern (the same hook backs swipe-right since Story 2.3). Revisit when the project adopts a `data-reduce-motion` SSR cookie or hydration-stable media-query strategy.
+- Diagonal swipe with dominant `deltaY` and small `deltaX` causes `dragX` jitter during vertical scroll. `react-swipeable` fires `onSwiping` for any direction; the current handler reacts to any non-zero `deltaX`. Pre-existing pattern from swipe-right (Story 2.3). Revisit if vertical-scroll jitter becomes user-visible.
+- All e2e specs use hardcoded UUIDs and `cleanupTodos()` in `beforeEach` truncates the entire table. Playwright workers running in parallel would clobber each other's seed data. Pre-existing project pattern across `complete.spec.ts`, `a11y.spec.ts`, and now `delete-undo.spec.ts`. Either pin Playwright to single-worker mode (current default) or scope cleanup by id-prefix when parallelism is enabled.

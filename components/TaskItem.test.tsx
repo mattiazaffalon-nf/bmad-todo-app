@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
 import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { useSwipeable } from "react-swipeable";
 import type { OptimisticTodo } from "@/lib/validation";
 import { TaskItem } from "./TaskItem";
 
 const mockMutate = vi.fn();
+const mockDeleteFn = vi.fn();
 
 vi.mock("@/hooks/use-toggle-todo", () => ({
   useToggleTodo: () => ({ mutate: mockMutate, isPending: false }),
@@ -15,12 +16,18 @@ vi.mock("react-swipeable", () => ({
   useSwipeable: vi.fn(() => ({ ref: vi.fn() })),
 }));
 
-function mockMatchMedia(matches: boolean) {
+type MatchMediaConfig = boolean | { swipe?: boolean; reduceMotion?: boolean };
+
+function mockMatchMedia(config: MatchMediaConfig) {
+  const resolved =
+    typeof config === "boolean"
+      ? { swipe: config, reduceMotion: false }
+      : { swipe: true, reduceMotion: false, ...config };
   Object.defineProperty(window, "matchMedia", {
     writable: true,
     configurable: true,
     value: vi.fn().mockImplementation((query: string) => ({
-      matches,
+      matches: query.includes("prefers-reduced-motion") ? resolved.reduceMotion : resolved.swipe,
       media: query,
       onchange: null,
       addListener: vi.fn(),
@@ -34,9 +41,14 @@ function mockMatchMedia(matches: boolean) {
 
 beforeEach(() => {
   mockMutate.mockReset();
+  mockDeleteFn.mockReset();
   vi.mocked(useSwipeable).mockClear();
   vi.mocked(useSwipeable).mockReturnValue({ ref: vi.fn() } as unknown as ReturnType<typeof useSwipeable>);
-  mockMatchMedia(true); // default: mobile (swipe enabled)
+  mockMatchMedia(true); // default: mobile (swipe enabled, motion not reduced)
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 const todo: OptimisticTodo = {
@@ -133,12 +145,11 @@ describe("TaskItem", () => {
     mockMatchMedia(true);
     render(<ul><TaskItem todo={todo} /></ul>);
     const config = vi.mocked(useSwipeable).mock.calls[0][0];
-    // deltaX 30 is below the 80px threshold; clientWidth in jsdom is 0 so the 40%-width branch is also below
     config.onSwiped?.({ deltaX: 30, dir: "Right" } as never);
     expect(mockMutate).not.toHaveBeenCalled();
   });
 
-  it("swipe-left below lg does NOT invoke mutate (only swipe-right wired)", () => {
+  it("swipe-left below lg does NOT invoke toggle mutate (routes to onDelete, not toggle)", () => {
     mockMatchMedia(true);
     render(<ul><TaskItem todo={todo} /></ul>);
     const config = vi.mocked(useSwipeable).mock.calls[0][0];
@@ -146,12 +157,84 @@ describe("TaskItem", () => {
     expect(mockMutate).not.toHaveBeenCalled();
   });
 
-  it("at lg+ viewport, swiping does not invoke mutate (handlers gated)", () => {
+  it("at lg+ viewport, swiping does not invoke toggle mutate (handlers gated)", () => {
     mockMatchMedia(false);
     render(<ul><TaskItem todo={todo} /></ul>);
     const config = vi.mocked(useSwipeable).mock.calls[0][0];
-    // Even if the host element invokes onSwiped (defensively), the gate short-circuits
     config.onSwiped?.({ deltaX: 200, dir: "Right" } as never);
     expect(mockMutate).not.toHaveBeenCalled();
+  });
+
+  // --- Delete button (AC #1) ---
+
+  it("trash button renders with aria-label='Delete task'", () => {
+    render(<ul><TaskItem todo={todo} /></ul>);
+    expect(screen.getByRole("button", { name: /delete task/i })).toBeInTheDocument();
+  });
+
+  it("clicking trash button calls onDelete with todo.id at lg+ viewport (independent of swipe gate)", () => {
+    mockMatchMedia(false); // lg+ — swipe disabled, but trash button must still work
+    render(<ul><TaskItem todo={todo} onDelete={mockDeleteFn} /></ul>);
+    fireEvent.click(screen.getByRole("button", { name: /delete task/i }));
+    expect(mockDeleteFn).toHaveBeenCalledWith(todo.id);
+  });
+
+  // --- Keyboard Delete (AC #3) ---
+
+  it("Delete key on focused <li> row calls onDelete", () => {
+    render(<ul><TaskItem todo={todo} onDelete={mockDeleteFn} /></ul>);
+    const row = screen.getByRole("listitem");
+    fireEvent.keyDown(row, { key: "Delete" });
+    expect(mockDeleteFn).toHaveBeenCalledWith(todo.id);
+  });
+
+  it("Delete key does NOT call onDelete when onDelete prop is absent", () => {
+    render(<ul><TaskItem todo={todo} /></ul>);
+    const row = screen.getByRole("listitem");
+    // Should not throw even if onDelete is undefined
+    expect(() => fireEvent.keyDown(row, { key: "Delete" })).not.toThrow();
+  });
+
+  // --- Swipe-left delete (AC #2) ---
+
+  it("swipe-left past threshold at base viewport calls onDelete after 300ms", () => {
+    vi.useFakeTimers();
+    mockMatchMedia({ swipe: true, reduceMotion: false });
+    render(<ul><TaskItem todo={todo} onDelete={mockDeleteFn} /></ul>);
+    const config = vi.mocked(useSwipeable).mock.calls[0][0];
+    config.onSwiped?.({ deltaX: -200, dir: "Left" } as never);
+    expect(mockDeleteFn).not.toHaveBeenCalled(); // not yet
+    vi.advanceTimersByTime(300);
+    expect(mockDeleteFn).toHaveBeenCalledWith(todo.id);
+  });
+
+  it("swipe-left with prefers-reduced-motion calls onDelete immediately (no animation delay)", () => {
+    vi.useFakeTimers();
+    mockMatchMedia({ swipe: true, reduceMotion: true });
+    render(<ul><TaskItem todo={todo} onDelete={mockDeleteFn} /></ul>);
+    const config = vi.mocked(useSwipeable).mock.calls[0][0];
+    config.onSwiped?.({ deltaX: -200, dir: "Left" } as never);
+    vi.advanceTimersByTime(0);
+    expect(mockDeleteFn).toHaveBeenCalledWith(todo.id);
+  });
+
+  it("swipe-left below threshold does NOT call onDelete", () => {
+    vi.useFakeTimers();
+    mockMatchMedia({ swipe: true });
+    render(<ul><TaskItem todo={todo} onDelete={mockDeleteFn} /></ul>);
+    const config = vi.mocked(useSwipeable).mock.calls[0][0];
+    config.onSwiped?.({ deltaX: -30, dir: "Left" } as never);
+    vi.advanceTimersByTime(1000);
+    expect(mockDeleteFn).not.toHaveBeenCalled();
+  });
+
+  it("swipe-left at lg+ viewport does NOT call onDelete (swipe gate disabled)", () => {
+    vi.useFakeTimers();
+    mockMatchMedia({ swipe: false }); // lg+ — swipe disabled
+    render(<ul><TaskItem todo={todo} onDelete={mockDeleteFn} /></ul>);
+    const config = vi.mocked(useSwipeable).mock.calls[0][0];
+    config.onSwiped?.({ deltaX: -200, dir: "Left" } as never);
+    vi.advanceTimersByTime(1000);
+    expect(mockDeleteFn).not.toHaveBeenCalled();
   });
 });
