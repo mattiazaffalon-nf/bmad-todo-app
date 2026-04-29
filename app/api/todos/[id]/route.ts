@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { deleteTodo, updateTodo } from "@/db/queries";
 import { TodoUpdateSchema } from "@/lib/validation";
-import { internalError, notFound, validationFailed } from "../_lib/responses";
+import { internalError, notFound, validationFailed } from "@/lib/api-errors";
 
 const IdSchema = z.string().uuid();
 

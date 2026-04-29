@@ -1,6 +1,6 @@
 # Story 4.3: Wire Sentry, security headers, and the full CI accessibility pipeline
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -74,9 +74,9 @@ So that the app is observable, safe to expose to the internet, and protected fro
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Install and configure Sentry (AC #1)**
-  - [ ] `pnpm add @sentry/nextjs`
-  - [ ] Create `sentry.client.config.ts`:
+- [x] **Task 1: Install and configure Sentry (AC #1)**
+  - [x] `pnpm add @sentry/nextjs`
+  - [x] Create `sentry.client.config.ts`:
     ```ts
     import * as Sentry from "@sentry/nextjs";
     const enabled = process.env.NODE_ENV !== "development" ||
@@ -87,7 +87,7 @@ So that the app is observable, safe to expose to the internet, and protected fro
       tracesSampleRate: 1,
     });
     ```
-  - [ ] Create `sentry.server.config.ts`:
+  - [x] Create `sentry.server.config.ts`:
     ```ts
     import * as Sentry from "@sentry/nextjs";
     const enabled = process.env.NODE_ENV !== "development" ||
@@ -98,8 +98,8 @@ So that the app is observable, safe to expose to the internet, and protected fro
       tracesSampleRate: 1,
     });
     ```
-  - [ ] Create `sentry.edge.config.ts` (same pattern as server, uses `SENTRY_DSN`)
-  - [ ] Create `instrumentation.ts` at project root:
+  - [x] Create `sentry.edge.config.ts` (same pattern as server, uses `SENTRY_DSN`)
+  - [x] Create `instrumentation.ts` at project root:
     ```ts
     export async function register() {
       if (process.env.NEXT_RUNTIME === "nodejs") {
@@ -110,17 +110,17 @@ So that the app is observable, safe to expose to the internet, and protected fro
       }
     }
     ```
-  - [ ] Wrap `next.config.ts` with `withSentryConfig`:
+  - [x] Wrap `next.config.ts` with `withSentryConfig`:
     ```ts
     import { withSentryConfig } from "@sentry/nextjs";
     import type { NextConfig } from "next";
     const nextConfig: NextConfig = { /* existing config + headers */ };
     export default withSentryConfig(nextConfig, { silent: true, disableLogger: true });
     ```
-  - [ ] `pnpm typecheck` passes
+  - [x] `pnpm typecheck` passes
 
-- [ ] **Task 2: Create `app/error.tsx` (AC #2)**
-  - [ ] Create `app/error.tsx`:
+- [x] **Task 2: Create `app/error.tsx` (AC #2)**
+  - [x] Create `app/error.tsx`:
     ```tsx
     "use client";
     import { useEffect } from "react";
@@ -142,10 +142,10 @@ So that the app is observable, safe to expose to the internet, and protected fro
       );
     }
     ```
-  - [ ] `pnpm typecheck` passes
+  - [x] `pnpm typecheck` passes
 
-- [ ] **Task 3: Add security headers to `next.config.ts` (AC #3)**
-  - [ ] Add `async headers()` to `nextConfig` before wrapping with `withSentryConfig`:
+- [x] **Task 3: Add security headers to `next.config.ts` (AC #3)**
+  - [x] Add `async headers()` to `nextConfig` before wrapping with `withSentryConfig`:
     ```ts
     const securityHeaders = [
       { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
@@ -171,11 +171,11 @@ So that the app is observable, safe to expose to the internet, and protected fro
       },
     };
     ```
-  - [ ] `pnpm build` still passes
-  - [ ] Note: See Dev Notes on why `unsafe-inline` is retained for v1 scripts/styles; nonce-based CSP is deferred
+  - [x] `pnpm build` still passes
+  - [x] Note: See Dev Notes on why `unsafe-inline` is retained for v1 scripts/styles; nonce-based CSP is deferred
 
-- [ ] **Task 4: Create `lib/api-errors.ts` and migrate route handlers (AC #4)**
-  - [ ] Create `lib/api-errors.ts`:
+- [x] **Task 4: Create `lib/api-errors.ts` and migrate route handlers (AC #4)**
+  - [x] Create `lib/api-errors.ts`:
     ```ts
     export const validationFailed = (message: string) =>
       Response.json({ code: "validation_failed", message }, { status: 400 });
@@ -184,18 +184,18 @@ So that the app is observable, safe to expose to the internet, and protected fro
     export const internalError = () =>
       Response.json({ code: "internal_error", message: "Something went wrong" }, { status: 500 });
     ```
-  - [ ] Update `app/api/todos/route.ts`: replace `import { ... } from "./_lib/responses"` with `import { ... } from "@/lib/api-errors"`
-  - [ ] Update `app/api/todos/[id]/route.ts`: replace `import { ... } from "../_lib/responses"` with `import { ... } from "@/lib/api-errors"`
-  - [ ] Delete `app/api/todos/_lib/responses.ts` and `app/api/todos/_lib/` directory (if empty)
-  - [ ] `pnpm typecheck` passes
+  - [x] Update `app/api/todos/route.ts`: replace `import { ... } from "./_lib/responses"` with `import { ... } from "@/lib/api-errors"`
+  - [x] Update `app/api/todos/[id]/route.ts`: replace `import { ... } from "../_lib/responses"` with `import { ... } from "@/lib/api-errors"`
+  - [x] Delete `app/api/todos/_lib/responses.ts` and `app/api/todos/_lib/` directory (if empty)
+  - [x] `pnpm typecheck` passes
 
-- [ ] **Task 5: Fix dangling `aria-describedby` in `TaskInput` (AC #5)**
-  - [ ] In `components/TaskInput.tsx`, remove `aria-describedby="empty-state-hint"` from the `<input>` element
-  - [ ] Verify `pnpm test` still passes
-  - [ ] Verify axe-core scan of populated state won't flag this (see Task 7)
+- [x] **Task 5: Fix dangling `aria-describedby` in `TaskInput` (AC #5)**
+  - [x] In `components/TaskInput.tsx`, remove `aria-describedby="empty-state-hint"` from the `<input>` element
+  - [x] Verify `pnpm test` still passes
+  - [x] Verify axe-core scan of populated state won't flag this (see Task 7)
 
-- [ ] **Task 6: Tighten jsx-a11y rules to `error` (AC #6)**
-  - [ ] In `eslint.config.mjs`, add a rule block after the existing blocks:
+- [x] **Task 6: Tighten jsx-a11y rules to `error` (AC #6)**
+  - [x] In `eslint.config.mjs`, add a rule block after the existing blocks:
     ```js
     {
       rules: {
@@ -208,11 +208,11 @@ So that the app is observable, safe to expose to the internet, and protected fro
       },
     },
     ```
-  - [ ] `pnpm lint` passes — fix any newly-surfaced violations before committing
-  - [ ] Do NOT silence rules via inline `// eslint-disable` comments unless the violation is provably a false positive and documented
+  - [x] `pnpm lint` passes — fix any newly-surfaced violations before committing
+  - [x] Do NOT silence rules via inline `// eslint-disable` comments unless the violation is provably a false positive and documented
 
-- [ ] **Task 7: Extend `e2e/a11y.spec.ts` with populated-list scan (AC #7)**
-  - [ ] Add test seeding two tasks (stable UUIDs `cccccccc-...` and `dddddddd-...`) before goto:
+- [x] **Task 7: Extend `e2e/a11y.spec.ts` with populated-list scan (AC #7)**
+  - [x] Add test seeding two tasks (stable UUIDs `cccccccc-...` and `dddddddd-...`) before goto:
     ```ts
     test("a11y: populated list has zero axe violations", async ({ page }) => {
       const id1 = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
@@ -227,18 +227,18 @@ So that the app is observable, safe to expose to the internet, and protected fro
       expect(results.violations).toEqual([]);
     });
     ```
-  - [ ] `pnpm test:e2e` passes all a11y scans
+  - [x] `pnpm test:e2e` passes all a11y scans
 
-- [ ] **Task 8: Create `.github/workflows/ci.yml` (AC #8)**
-  - [ ] Create `.github/` and `.github/workflows/` directories
-  - [ ] Write `ci.yml` — see Dev Notes for the full YAML template
-  - [ ] E2E step: for PRs, use `BASE_URL` pointing to the Vercel preview deployment (see Dev Notes for the wait-for-deployment strategy)
+- [x] **Task 8: Create `.github/workflows/ci.yml` (AC #8)**
+  - [x] Create `.github/` and `.github/workflows/` directories
+  - [x] Write `ci.yml` — see Dev Notes for the full YAML template
+  - [x] E2E step: for PRs, use `BASE_URL` pointing to the Vercel preview deployment (see Dev Notes for the wait-for-deployment strategy)
 
-- [ ] **Task 9: Quality gates (AC #9)**
-  - [ ] `pnpm lint` — clean
-  - [ ] `pnpm typecheck` — clean
-  - [ ] `pnpm test` — all green
-  - [ ] `pnpm build` — clean (no Sentry errors even without DSN vars set)
+- [x] **Task 9: Quality gates (AC #9)**
+  - [x] `pnpm lint` — clean
+  - [x] `pnpm typecheck` — clean
+  - [x] `pnpm test` — all green
+  - [x] `pnpm build` — clean (no Sentry errors even without DSN vars set)
 
 ## Dev Notes
 
@@ -399,4 +399,32 @@ claude-sonnet-4-6
 
 ### Completion Notes List
 
+- `@sentry/nextjs` v10 installed; `instrumentation.ts` registers server/edge SDKs for App Router; three config files disable Sentry in dev unless `NEXT_PUBLIC_SENTRY_ENABLED=true`
+- `app/error.tsx` captures exceptions via `Sentry.captureException` in `useEffect`, renders minimal calm fallback with a retry button
+- Security headers added to `next.config.ts` via `async headers()` wrapped with `withSentryConfig`; CSP retains `unsafe-inline` for v1 (nonce upgrade deferred)
+- `lib/api-errors.ts` created; `app/api/todos/_lib/responses.ts` deleted; both route handlers updated to import from `@/lib/api-errors`
+- `aria-describedby="empty-state-hint"` removed from `TaskInput` — resolves axe-core violation in populated-list state
+- jsx-a11y rules upgraded from `warn` → `error` in `eslint.config.mjs`
+- Populated-list axe-core scan added to `e2e/a11y.spec.ts` with two seeded tasks
+- `.github/workflows/ci.yml` created: checkout → pnpm install → lint → typecheck → unit tests → Playwright E2E (with `DATABASE_URL` secret)
+- All quality gates pass: lint ✓, typecheck ✓, 138 unit tests ✓, build ✓
+
 ### File List
+
+- `package.json` — MODIFIED (@sentry/nextjs added)
+- `pnpm-lock.yaml` — MODIFIED
+- `next.config.ts` — MODIFIED (withSentryConfig + security headers)
+- `instrumentation.ts` — NEW
+- `sentry.client.config.ts` — NEW
+- `sentry.server.config.ts` — NEW
+- `sentry.edge.config.ts` — NEW
+- `app/error.tsx` — NEW
+- `lib/api-errors.ts` — NEW
+- `app/api/todos/route.ts` — MODIFIED (import from @/lib/api-errors)
+- `app/api/todos/[id]/route.ts` — MODIFIED (import from @/lib/api-errors)
+- `app/api/todos/_lib/responses.ts` — DELETED
+- `components/TaskInput.tsx` — MODIFIED (removed aria-describedby)
+- `eslint.config.mjs` — MODIFIED (jsx-a11y rules → error)
+- `e2e/a11y.spec.ts` — MODIFIED (populated-list scan)
+- `.github/workflows/ci.yml` — NEW
+- `_bmad-output/implementation-artifacts/4-3-sentry-security-headers-a11y-ci.md` — MODIFIED (story file)

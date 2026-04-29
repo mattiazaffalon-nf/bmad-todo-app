@@ -1,6 +1,6 @@
 import { createTodo, getTodoById, getTodos } from "@/db/queries";
 import { TodoCreateSchema } from "@/lib/validation";
-import { internalError, validationFailed } from "./_lib/responses";
+import { internalError, validationFailed } from "@/lib/api-errors";
 
 export async function GET() {
   try {
