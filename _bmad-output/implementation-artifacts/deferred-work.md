@@ -39,3 +39,12 @@
 
 - E2E swipe test uses `page.evaluate` synthetic touch events instead of `page.touchscreen` (AC#7 specifies the latter). WebKit blocks `new TouchEvent(...)` ("Illegal constructor") and `page.touchscreen` only exposes `tap()`. The workaround is documented in the spec file; tests are green. Revisit if Playwright adds a native swipe API for WebKit.
 - Swipe-right on an already-completed task un-completes it (bidirectional toggle, same as tap). Story 3.x may add directional-intent semantics (swipe-right = complete only, swipe-left = delete). Product decision.
+
+## Deferred from: code review of 3-1-delete-api-route-handler (2026-04-29)
+
+- User-isolation differentiation in `DELETE /api/todos/[id]`: when auth lands and `userId` becomes non-null, `deleteTodo` returning `0` for "row owned by another user" still answers `204` — indistinguishable from a real delete. Decide whether to surface `404` for cross-user attempts when wiring auth, or accept the existence-leak avoidance.
+- DB lock contention surfaces as `500 internal_error` instead of `204` when DELETE races a concurrent UPDATE/DELETE on the same row (deadlock victim, SQLSTATE `40001`/`40P01`/`55P03`). Pre-existing pattern shared with PATCH/POST. Address with a structured DB-error-mapping epic.
+- Future foreign-key references to `todos.id` without `ON DELETE CASCADE`/`SET NULL` will turn DELETE into a `500` (Postgres SQLSTATE `23503`). No FKs today; address when the first child table is introduced (e.g., subtasks, audit, drafts).
+- `internalError()` discards DB error context (no structured logging beyond `console.error(err)`). Pre-existing pattern across all route handlers; needs a logging-standardization epic.
+- No explicit test for "valid UUID that never existed" — covered indirectly by the "already-deleted (idempotent)" test which exercises the same `0 rows affected → 204` code path. Add a dedicated test if a future refactor splits the two paths.
+- Edge-input pinning (null-byte in id, `ctx.params` Promise rejection) — `IdSchema = z.string().uuid()` rejects `\0` strings before the query layer; `ctx.params` rejection is theoretical. Both pre-existing patterns shared with PATCH.

@@ -35,7 +35,7 @@ export async function deleteTodo(id: string, userId: string | null): Promise<num
   const result = await db
     .delete(todos)
     .where(and(eq(todos.id, id), userIdFilter(userId)))
-    .returning();
+    .returning({ id: todos.id });
   return result.length;
 }
 

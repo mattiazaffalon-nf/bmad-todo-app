@@ -2,7 +2,7 @@
 import { sql } from "drizzle-orm";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { db } from "./client";
-import { createTodo, getTodoById, getTodos, updateTodo } from "./queries";
+import { createTodo, deleteTodo, getTodoById, getTodos, updateTodo } from "./queries";
 
 const uuid = () => crypto.randomUUID();
 const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -130,5 +130,34 @@ describe("db/queries", () => {
 
     const rowB = await getTodoById(b, null);
     expect(rowB?.completed).toBe(false);
+  });
+
+  it("deleteTodo removes the row and returns 1", async () => {
+    const id = uuid();
+    await createTodo({ id, description: "to delete" }, null);
+
+    const affected = await deleteTodo(id, null);
+    expect(affected).toBe(1);
+
+    const persisted = await getTodoById(id, null);
+    expect(persisted).toBeNull();
+  });
+
+  it("deleteTodo returns 0 when no row matches the supplied id", async () => {
+    const affected = await deleteTodo(uuid(), null);
+    expect(affected).toBe(0);
+  });
+
+  it("deleteTodo only removes the targeted row", async () => {
+    const a = uuid();
+    const b = uuid();
+    await createTodo({ id: a, description: "a" }, null);
+    await createTodo({ id: b, description: "b" }, null);
+
+    await deleteTodo(a, null);
+
+    const rowB = await getTodoById(b, null);
+    expect(rowB).not.toBeNull();
+    expect(rowB?.id).toBe(b);
   });
 });

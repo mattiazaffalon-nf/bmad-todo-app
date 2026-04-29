@@ -155,19 +155,41 @@ describe("app/api/todos/[id] route handlers", () => {
   });
 
   describe("DELETE /api/todos/[id]", () => {
-    it("removes a row and returns 204", async () => {
+    it("removes a row and returns 204 with no body and no Content-Type", async () => {
       const id = uuid();
       await queries.createTodo({ id, description: "to delete" }, null);
+
       const res = await del(id);
       expect(res.status).toBe(204);
+      expect(await res.text()).toBe("");
+      expect(res.headers.get("content-type")).toBeNull();
+
+      expect(await queries.getTodoById(id, null)).toBeNull();
     });
 
     it("returns 204 for an already-deleted id (idempotent)", async () => {
       const id = uuid();
       await queries.createTodo({ id, description: "to delete" }, null);
       await del(id);
+
       const res = await del(id);
       expect(res.status).toBe(204);
+      expect(await res.text()).toBe("");
+    });
+
+    it("only removes the targeted row", async () => {
+      const a = uuid();
+      const b = uuid();
+      await queries.createTodo({ id: a, description: "a" }, null);
+      await queries.createTodo({ id: b, description: "b" }, null);
+
+      const res = await del(a);
+      expect(res.status).toBe(204);
+
+      expect(await queries.getTodoById(a, null)).toBeNull();
+      const rowB = await queries.getTodoById(b, null);
+      expect(rowB).not.toBeNull();
+      expect(rowB?.id).toBe(b);
     });
 
     it("returns 400 validation_failed for a malformed id and does not touch the DB", async () => {

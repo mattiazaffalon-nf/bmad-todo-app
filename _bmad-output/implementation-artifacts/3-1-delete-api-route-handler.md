@@ -1,6 +1,6 @@
 # Story 3.1: Build idempotent `DELETE /api/todos/[id]` Route Handler
 
-Status: review
+Status: done
 
 ## Story
 
@@ -215,7 +215,7 @@ claude-sonnet-4-6
 
 - `pnpm typecheck` — clean after each task.
 - `pnpm lint` — clean.
-- `pnpm test` — 99/99 green (95 prior + 4 new DELETE tests).
+- `pnpm test` — 99/99 green initially (95 prior + 4 new DELETE tests); 103/103 green after addressing review findings (+3 query-layer `deleteTodo` tests + 1 route isolation test).
 - `pnpm build` — clean; migrations applied, Next.js compiled successfully.
 
 ### Completion Notes List
@@ -226,7 +226,31 @@ claude-sonnet-4-6
 
 ### File List
 
-- `db/queries.ts` — added `deleteTodo`
-- `app/api/todos/[id]/route.ts` — added `DELETE` handler
-- `app/api/todos/[id]/route.test.ts` — extended with DELETE describe block
-- `_bmad-output/implementation-artifacts/3-1-delete-api-route-handler.md` — this story spec
+- `db/queries.ts` — added `deleteTodo`; projects `{ id: todos.id }` in `.returning()` to avoid materializing full rows.
+- `db/queries.test.ts` — added 3 `deleteTodo` tests (removes-and-returns-1, returns-0-on-miss, only-deletes-targeted-row).
+- `app/api/todos/[id]/route.ts` — added `DELETE` handler.
+- `app/api/todos/[id]/route.test.ts` — extended with DELETE describe block (4 initial tests + 1 isolation test, plus body/header assertions on the 204 path).
+- `_bmad-output/implementation-artifacts/3-1-delete-api-route-handler.md` — this story spec.
+- `_bmad-output/implementation-artifacts/deferred-work.md` — appended 6 deferred items from the code review.
+
+### Review Findings
+
+- [x] [Review][Patch] **F1 (Major): `db/queries.test.ts` has zero coverage for `deleteTodo`** [`db/queries.test.ts`] — Every other query helper (`createTodo`, `getTodos`, `getTodoById`, `updateTodo`) has direct DB-layer tests; the architecture mandates this pattern (Test-DB strategy). `deleteTodo` ships untested at the query layer. Fix: add three tests mirroring `updateTodo` coverage — `deleteTodo` returns `1` and removes the row; returns `0` for a never-existed id; only deletes the targeted row when two rows are seeded.
+- [x] [Review][Patch] **F2 (Major): "removes a row and returns 204" test does not assert the row is actually gone** [`app/api/todos/[id]/route.test.ts:158-163`] — A regression that replaces `deleteTodo` with a no-op or soft-delete would still pass this test. Fix: after `del(id)`, assert `expect(await queries.getTodoById(id, null)).toBeNull()`.
+- [x] [Review][Patch] **F3 (Major): No route test pinning that DELETE only removes the targeted row** [`app/api/todos/[id]/route.test.ts`] — A `WHERE` clause regression that drops `eq(todos.id, id)` (since v1's `userIdFilter(null)` matches every row) would pass current tests by deleting all rows. Fix: add a test that seeds two rows, deletes one, asserts the other survives — same shape as `db/queries.test.ts:123` `updateTodo only mutates the targeted row`.
+- [x] [Review][Patch] **F4 (Minor): `.returning()` materializes full row payloads when only a count is needed** [`db/queries.ts:35-39`] — `deleteTodo` runs `.delete().where().returning()` and reads `.length`. The full row data is fetched and discarded. Fix: `.returning({ id: todos.id })` to project a single column.
+- [x] [Review][Patch] **F5 (Minor): 204 response contract is not pinned by tests** [`app/api/todos/[id]/route.test.ts:158-191`] — `new Response(null, { status: 204 })` is correct, but no test asserts the body is empty or that no `Content-Type`/`Content-Length` headers leak. A future refactor through `Response.json(...)` would silently violate RFC 9110 §15.3.5. Fix: in the 204 tests, add `expect(await res.text()).toBe("")` and `expect(res.headers.get("content-type")).toBeNull()`.
+- [x] [Review][Defer] **F6 (Major): User-isolation differentiation when auth lands** [`app/api/todos/[id]/route.ts:45`] — deferred, forward-compat. When `userId` becomes non-null, `deleteTodo` returning `0` for "owned by another user" still answers `204` — indistinguishable from a real delete; future contributors must decide whether to surface `404` for cross-user attempts when auth is wired. v1 always passes `null`, so the call site is benign today.
+- [x] [Review][Defer] **F7 (Major): Concurrent DELETE under row lock can surface as 500 instead of 204** [`app/api/todos/[id]/route.ts:47-50`] — deferred, pre-existing. Pattern is shared with PATCH/POST; the `internalError()` catch maps deadlock victim (SQLSTATE `40001`/`40P01`/`55P03`) to a generic 500. Cross-handler concern, not introduced here.
+- [x] [Review][Defer] **F8 (Major): Future foreign keys without `ON DELETE CASCADE` will turn DELETE into a 500** [`db/queries.ts:34-40`] — deferred, no FKs reference `todos` today. When a future epic adds a child table (drafts, audit, subtasks), Postgres SQLSTATE `23503` will surface as `500 internal_error`. Address when the first FK is introduced.
+- [x] [Review][Defer] **F9 (Major): `internalError()` discards DB error context** [`app/api/todos/[id]/route.ts:47-50`] — deferred, pre-existing pattern shared with PATCH/POST/GET. `console.error(err)` logs the raw error but the response body has no diagnostic. Cross-handler concern; needs structured-logging epic, not a per-story patch.
+- [x] [Review][Defer] **F10 (Minor): No explicit test for valid-but-nonexistent UUID** [`app/api/todos/[id]/route.test.ts`] — deferred, covered indirectly by the "already-deleted id (idempotent)" test, which exercises the same "0 rows affected → 204" code path. A dedicated test is low marginal value today.
+- [x] [Review][Defer] **F11 (Minor): Edge inputs not pinned (null byte in id, params Promise rejection)** [`app/api/todos/[id]/route.ts:41`] — deferred. `IdSchema = z.string().uuid()` rejects `\0`-bearing strings before the query layer; `ctx.params` rejection is theoretical and would still produce a 500 (correct status, slightly misleading message). Both pre-existing patterns shared with PATCH.
+
+## Change Log
+
+| Date       | Change                        |
+| ---------- | ----------------------------- |
+| 2026-04-29 | Story 3.1 spec created        |
+| 2026-04-29 | Implementation complete: `deleteTodo` query helper + idempotent `DELETE /api/todos/[id]` route handler. 99/99 unit/integration tests green. |
+| 2026-04-29 | Code review applied: 5 patches (db-layer `deleteTodo` coverage, behavioral row-gone assertion, isolation test, `.returning()` projection, 204 body/header pinning). 6 deferred items recorded in `deferred-work.md`. 103/103 tests green. |
