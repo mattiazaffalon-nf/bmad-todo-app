@@ -35,12 +35,13 @@ export function UndoToast({ visible, onUndo, onDismiss }: UndoToastProps) {
         "min-w-[240px] max-w-[320px] h-11 px-4 rounded-full",
         "bg-surface border border-border-subtle",
         "motion-reduce:transition-none",
-        visible ? "opacity-100 ease-out" : "opacity-0 ease-in pointer-events-none",
+        visible ? "" : "pointer-events-none",
       ].join(" ")}
       style={{
         visibility: visible ? "visible" : "hidden",
+        opacity: visible ? 1 : 0,
         transition: visible
-          ? "opacity 200ms ease-out, visibility 0s 0s"
+          ? "none"
           : "opacity 200ms ease-in, visibility 0s 200ms",
       }}
     >
