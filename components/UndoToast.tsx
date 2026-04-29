@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 interface UndoToastProps {
   visible: boolean;
@@ -9,17 +9,6 @@ interface UndoToastProps {
 }
 
 export function UndoToast({ visible, onUndo, onDismiss }: UndoToastProps) {
-  const [mounted, setMounted] = useState(visible);
-
-  useEffect(() => {
-    if (visible) {
-      setMounted(true);
-      return;
-    }
-    const t = setTimeout(() => setMounted(false), 200);
-    return () => clearTimeout(t);
-  }, [visible]);
-
   useEffect(() => {
     if (!visible) return;
     const handler = (e: KeyboardEvent) => {
@@ -36,8 +25,6 @@ export function UndoToast({ visible, onUndo, onDismiss }: UndoToastProps) {
     return () => document.removeEventListener("keydown", handler);
   }, [visible, onDismiss]);
 
-  if (!mounted && !visible) return null;
-
   return (
     <div
       role="status"
@@ -47,9 +34,15 @@ export function UndoToast({ visible, onUndo, onDismiss }: UndoToastProps) {
         "flex items-center justify-between gap-4",
         "min-w-[240px] max-w-[320px] h-11 px-4 rounded-full",
         "bg-surface border border-border-subtle",
-        "transition-opacity duration-200 motion-reduce:transition-none",
+        "motion-reduce:transition-none",
         visible ? "opacity-100 ease-out" : "opacity-0 ease-in pointer-events-none",
       ].join(" ")}
+      style={{
+        visibility: visible ? "visible" : "hidden",
+        transition: visible
+          ? "opacity 200ms ease-out, visibility 0s 0s"
+          : "opacity 200ms ease-in, visibility 0s 200ms",
+      }}
     >
       <span className="text-sm text-foreground-muted">Task deleted</span>
       <button
